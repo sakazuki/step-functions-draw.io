@@ -744,7 +744,7 @@ ChoiceEdge.prototype.toJSON = function(cell, cells){
 registCodec(ChoiceEdge);
 
 //mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.9.0.min.js");
-mxscript("https://github.com/soney/jsep/raw/master/build/jsep.min.js");
+mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
 //mxscript("https://localhost:8000/js/aws-sdk-2.9.0.js");
 //mxscript("https://localhost:8000/js/jsep.min.js");
 

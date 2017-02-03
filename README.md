@@ -14,6 +14,7 @@
 - Input https://rawgit.com/sakazuki/step-functions-draw.io/master/aws-step-functions.js
   (Thanks: https://rawgit.com/)
 - [Apply]
+- Reload the page
 
 ## Example
 1. Drag and drop a **Start** on a canvas
