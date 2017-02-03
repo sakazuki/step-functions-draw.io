@@ -25,11 +25,26 @@
 1. Drag a connection from **Task** to **End**
 1. Menu [StepFunctions]-[Export JSON]
 
+## Usage
+### Top-level fields
+- You can set them with [Edit Data...] on a canvas.
+
+### Choice Connection Condition field
+- You can use `==`, `>`, `<`, `>=`, `<=`, `!`, `&&`, `||`, `()`.
+- You can write it like `($.x == true) && ($.y == 3) && !($.z == 2)`
+- I parse it using JSEP (https://github.com/soney/jsep) in Choice Condition.
+
+### Draw Default from Choice
+- Drag a **Next** connection in the sidebar and drop on **Choice**
+
+### Catch
+- Drag a **Catch** connection in the sidebar and drop on the source state.
+
+### Retry
+- Drag a connection from a state and Drop on self.
+
+
 ## Feature
-- Top-level fields: [Edit Data...] on a canvas
-- use JSEP (https://github.com/soney/jsep) in Choice Condition.
-- Retry: Drag a connection and Drop on self.
-
-
-
+- You can put states that are not connected.
+- You can use states that is normal shapes that draw.io provides.
 
