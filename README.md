@@ -10,7 +10,9 @@
 - Access to https://www.draw.io/.
 - Select Save Option (ex. Decide Later...)
 - Select Menu [Extras]-[Plugins]
-- Click [Add], Input https://xxxxxxxxxx/aws-step-functions.js , and [Apply]
+- Click [Add]
+- Input https://github.com/sakazuki/step-functions-draw.io/raw/master/aws-step-functions.js
+- [Apply]
 
 ## Example
 1. Drag and drop a **Start** on a canvas
