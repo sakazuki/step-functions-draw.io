@@ -121,31 +121,7 @@ Draw.loadPlugin(function(ui) {
   }
 
   awssfStateHandler = function(state){
-    if (state != null)
-    {
-      this.state = state;
-      this.init();
-      
-      // Handles escape keystrokes
-      this.escapeHandler = mxUtils.bind(this, function(sender, evt)
-      {
-        if (this.livePreview && this.index != null)
-        {
-          // Redraws the live preview
-          this.state.view.graph.cellRenderer.redraw(this.state, true);
-          
-          // Redraws connected edges
-          this.state.view.invalidate(this.state.cell);
-          this.state.invalid = false;
-          this.state.view.validate();
-        }
-        
-        this.reset();
-      });
-      
-      this.state.view.graph.addListener(mxEvent.ESCAPE, this.escapeHandler);
-    }
-    //mxVertexHandler.apply(this, arguments);
+    mxVertexHandler.apply(this, arguments);
   }
   awssfStateHandler.prototype = new mxVertexHandler();
   awssfStateHandler.prototype.constructor = awssfStateHandler;
@@ -250,22 +226,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(PassState);
   PassStateHandler = function(state){
     this.custom = function(){
-      var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
-      img.setAttribute('title', 'Next');
-      img.style.cursor = 'pointer';
-      img.style.width = '16px';
-      img.style.height = '16px';
-      mxEvent.addGestureListeners(img,
-        mxUtils.bind(this, function(evt){
-          var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-          var edge = NextEdge.prototype.create();
-          this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-          this.graph.isMouseDown = true;
-          this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-          mxEvent.consume(evt);
-        })
-      );
-      this.domNode.appendChild(img);
+      this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
     };
     awssfStateHandler.apply(this, arguments);
   }
@@ -336,111 +297,15 @@ Draw.loadPlugin(function(ui) {
   };
   registCodec(TaskState);
   TaskStateHandler = function(state){
-    mxVertexHandler.apply(this, arguments);
+    this.custom = function(){
+      this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
+      this.domNode.appendChild(CatchEdge.prototype.createHandlerImage.apply(this, arguments));
+      this.domNode.appendChild(RetryEdge.prototype.createHandlerImage.apply(this, arguments));
+    };
+    awssfStateHandler.apply(this, arguments);
   }
   TaskState.prototype.handler = TaskStateHandler;
-  TaskStateHandler.prototype = new mxVertexHandler();
-  TaskStateHandler.prototype.constructor = TaskStateHandler;
-  TaskStateHandler.prototype.domNode = null;
-  TaskStateHandler.prototype.init = function(){
-    mxVertexHandler.prototype.init.apply(this, arguments);
-    this.domNode = document.createElement('div');
-    this.domNode.style.position = 'absolute';
-    this.domNode.style.whiteSpace = 'nowrap';
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
-    img.setAttribute('title', 'Next');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = NextEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
-    this.domNode.appendChild(img);
-
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
-    img.setAttribute('title', 'Catch');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = CatchEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
-    this.domNode.appendChild(img);
-
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACCUlEQVRIS7WVTUhUURTHf7NRN+JsUkER3UUI5kJMIoqBMNzkR6C7Elq5UReh0sIkgsCF0yJw5wdi2MYPEAyxLAhcuNBcFKLM4EJ0oU5I+FF648zzNe++d5/MM72rx7vn/M///s9XSCmlOO/EE7C8DUtbcDMfyvKgOHyui30ZMoInDqH9A0z8APl2n3AW1F6HvmqQb5/jBRfA5kkzqCnIwEMrkOHo4E8mYGg5rSdrRq2VEH3g8UuBC+O6seDAtsd4o+cFFrjoWvImJUWkBIbroCBbD3aiYH0XXn6BkW/6nWgfa9VyYIG75bDBZ9bg6VQKpKUCnt+BnQN49B5Wd/QAj8tgsPbfPws8/Bp+HqUM/cDFQpwlgS3TMLriZb/X4QCP7amkJM5zUXDBEGnO+iCkxr8rTyJN4NkZ0FwOHbdhcx8iQ7B/7C0AR2JDqvuTouezmbk7oX9OrU59NgvzcXNldd+FF/eSd+kxv1UIvfehNBeiC3jIOMNozNPV/MY1eNcARTnQNQf9i2bmmuZBqqWpFN7WwK/fJMv3Y0wPkJMJiU5XKaZb5+L2KgLtVfB1A+rH9KQa61w6tDiq13rQQSCs422GDhWgK5stNsuLTkVH+TkfbJ7nEsQ5DvwkEinscWCw8d9EbTOWVKYgAirzRWZ4oE3kZiA7VLrS3qGyR/9rhwatFB97syyXBP4Xec8Ry9TpbfEAAAAASUVORK5CYII=');
-    img.setAttribute('title', 'Retry');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = RetryEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
-    this.domNode.appendChild(img);
-
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACpklEQVRIS7VVMU9TURg9nWiZoF0k1MQmlKCREhhowUHaScpWdYHoINUORoKTiT+AhMnE6IDigraL2g10amGhxaFGMJHQJiWxBJcWJl6Zas4H9/leH4VKwl2a13vv+c73nfN911ar1Wq4oGVrBpzxq9VDnYLd3gKbzXYmpabAs2s5bBWKCAwOIPstJ7/dXs/5wNMrGfh6e+BytgvA4pcU3J0d6PNdRWp5FZpWxdhoSPbKlT2sb2wieHPIEszC/H08iQNNQ6m0i1DwBhwOu4BPP3kgwUo7u+CZ4MiwBMlkc3C52tDqcODeRMQUwAROVvlCEbHohFz8mFyUw2SpsuA3A/AsAblHAnPzcXi7PAiNDOsBTOBMce5tAk+nJuWCceUL2/qnt+uKaY9EXrx8h9jDcRMJS1nIqFLZx51IWAB+rP+SsjB11p2sy+V9YUwNuD4ll+B0tplY838LuHLG/YnbOnA9I5WhCrAQ/4zuLg8C/gFrzenjjZ+bKO38QWYtp4s3M/vakqq6rQI8f/ZYHPNmPoE+3zW4Oy+h93qP9IEwV+Ixutfrkbpt5YtIr6yKuI0W60z29DwD5PNF6Ye7kTHRTAf/Xdo1NQbB6Rzl55MCUAs6xNhQvHfZ3WEGpyhkTSecm3lhW9jTDDpz1pxdRifQHUrA/6k5LUz30FHsbr3mxpTr3bL0NYVHUbN/lYDhW0d2PNUtRvDGPm+XWlKbcnnP5POmwE/rUAqlVv1EpNtmZl9hemqycYcezZZtxKLjMlsoMld4NGiZLenljIj2b7YkxAwNZwuBmKKmHUrqAX8/WtVUPGZF0Rc+JBEaGcKBVkV27TtcrnY4HC1gVxvXiY8FM6BQzcxzBmPJjIxVgKZfIpaLs4Nu8g/2n/8lqu/GC31DGw6XMzb+An4I4cvYKbPGAAAAAElFTkSuQmCC');
-    img.setAttribute('title', 'Settings');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){ mxEvent.consume(evt);})
-    );
-    mxEvent.addListener(img, 'click',
-      mxUtils.bind(this, function(evt){
-        //this.graph.removeCells([this.state.cell]);
-        ui.actions.get('editData').funct();
-        mxEvent.consume(evt);
-      })
-    );
-    this.domNode.appendChild(img);
-
-    this.graph.container.appendChild(this.domNode);
-    this.redrawTools();
-  };
-  TaskStateHandler.prototype.redraw = function()
-  {
-    mxVertexHandler.prototype.redraw.apply(this);
-    this.redrawTools();
-  };
-  TaskStateHandler.prototype.redrawTools = function()
-  {
-    if (this.state != null && this.domNode != null)
-    {
-      var dy = (mxClient.IS_VML && document.compatMode == 'CSS1Compat') ? 20 : 4;
-      this.domNode.style.left = (this.state.x + this.state.width - 56) + 'px';
-      this.domNode.style.top = (this.state.y + this.state.height + dy) + 'px';
-    }
-  };
-  TaskStateHandler.prototype.destroy = function(sender, me)
-  {
-    mxVertexHandler.prototype.destroy.apply(this, arguments);
-    if (this.domNode != null)
-    {
-      this.domNode.parentNode.removeChild(this.domNode);
-      this.domNode = null;
-    }
-  };
+  mxUtils.extend(TaskStateHandler, awssfStateHandler);
 
 
   ChoiceState = function(){};
@@ -483,78 +348,14 @@ Draw.loadPlugin(function(ui) {
   };
   registCodec(ChoiceState);
   ChoiceStateHandler = function(state){
-    mxVertexHandler.apply(this, arguments);
+    this.custom = function(){
+      this.domNode.appendChild(ChoiceEdge.prototype.createHandlerImage.apply(this, arguments));
+      this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
+    };
+    awssfStateHandler.apply(this, arguments);
   }
   ChoiceState.prototype.handler = ChoiceStateHandler;
-  ChoiceStateHandler.prototype = new mxVertexHandler();
-  ChoiceStateHandler.prototype.constructor = ChoiceStateHandler;
-  ChoiceStateHandler.prototype.domNode = null;
-  ChoiceStateHandler.prototype.init = function(){
-    mxVertexHandler.prototype.init.apply(this, arguments);
-    this.domNode = document.createElement('div');
-    this.domNode.style.position = 'absolute';
-    this.domNode.style.whiteSpace = 'nowrap';
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACWUlEQVRIS7WVXW/SUBjH/12AGZDSDkkwQ40mytCxmC1z6Fx82RUXiiYz8WvMO/0AXrqPoYkandF4t+iWuSXTRMkcu1OUKbFAAWFCy1ZzaoCe9oDUl3PV5pzzO8/L/3keTtM0DV1WsdpAVlaRLSoICi4ERScEj6PbldYex4LX1F08fyNjM7MN8m1ee5x9GAq5ER8TQb47LQs8ldnG49U8E8p65ErMj0jIzeRT8EerObz9UO3JZeOhWNiL+OiA5V4LTiy+tyTZBjcvXJ8KWDzQ4SSuc/NbllCMHtmLWJhHwOdEHwc0djSkpToWkkVk8nXKEBL72cQglQMdzgrH9Iiggwnk5XoJXwp1/f90mMf3Hzu4vyxBKqvUAycPe3A1to9Wy+0Hn1BX24oM+ftxbTKAQkXF3cVvUBrtvYtRARNhL1Y2y3ixXrJYf3PmQBsuV1Rt7skWdejcsA9nhngsvi9hOVW2lYfZy4OtOuA2Plc1cyITp/w4cciDZ2t5vPtoTz3GxHILSVkzu3dp3I8ogb+2Dz8/7MOFqKB7y7R8MsJj6rgPSxvWsLgcnL6XK6tMryjLWTHvltCJY15Mj4hIpit4ulaw5IOKOZGiWS3khlGKr1JlpKVaS4o1ZRcPV3IWrfc7OdyaOUhLsVPZn43wGD/qBe92/LaICJGpc1Khd+YzlNZt6Q8AsfpGImStUAL6b72laeWfdkWj/IweM/s5ecTYDjqFiISC9JKe+nkT8msSFfRQsR4hUAKMjw3Ym0RmK8kM/SoryMoKgqIL+0XX381Qu0rpeYb+KzDh/AQ2ZmDL5ziOTgAAAABJRU5ErkJggg==');
-    img.setAttribute('title', 'Choice');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = ChoiceEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
-    this.domNode.appendChild(img);
-
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACF0lEQVRIS2P8////fwY84NfbBwzfHl9k+P7kAgOnjAEDl6w+A5uwAj4tcDlGbIb//faB4fGqQoYPFzYw/P3+AcMgZk4BBgGDAAbZsH4GZi4BnBZhGA4y8MGCRKyGopsCskQhYT7YImwAxfAHCxIY3h5fSJSXkRWJOeUzyIZPwNAHNxzk4rvTA0k2GKZBOXM9hg/AhoPC+HKVIjwoeNWdGBSTFjGwCkgjLPv/Hyz/4eJmhkfLcxj+/fyM4hBQEOm23UeJA7Dh6MEBM/zjlR0MDxengA3hkNRiEHcpZBAyjWR4f24tw4MF8Ri+FLaMZ1BIWICaWi4UCDD8/f4RLojNcJikYtISBj5tD4bHK/MY3p1ahuF6gwnvEYb/fHP/PyhIkAE+w4WtkhhkQ3sY3hydx/BkTQmG60FBA8sHjO/Pr/+PHpH4DMcnB7IJOWIZn26q//98SyPRLufTdGVQSFzI8PHyNnh8IGuW9KlnkPJtAAuR7HJCwYLiclLDXCl1JQOvhhPDw8VpDB8urMcf5qCkSExqISYpMnPyMxhMQJRFeNM5eib68/Utw7tTyxmebqjGyEQgL2BN55AcqoCS1kktB0Cu1m17gJlDQQbRrGyBuZLcUhE5+SH7GEd5nkBUEIGCAlSWEFWew2yF1EQF0JoIUebA5EGGQmqiCaTVROgRCalDL4AxlyyoDjWgrA4lNaXgUo+1gqaW4QBz2GTLKek4VQAAAABJRU5ErkJggg==');
-    img.setAttribute('title', 'Default');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = NextEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
-    this.domNode.appendChild(img);
-
-    this.graph.container.appendChild(this.domNode);
-    this.redrawTools();
-  };
-  ChoiceStateHandler.prototype.redraw = function()
-  {
-    mxVertexHandler.prototype.redraw.apply(this);
-    this.redrawTools();
-  };
-  ChoiceStateHandler.prototype.redrawTools = function()
-  {
-    if (this.state != null && this.domNode != null)
-    {
-      var dy = (mxClient.IS_VML && document.compatMode == 'CSS1Compat') ? 20 : 4;
-      this.domNode.style.left = (this.state.x + this.state.width - 56) + 'px';
-      this.domNode.style.top = (this.state.y + this.state.height + dy) + 'px';
-    }
-  };
-  ChoiceStateHandler.prototype.destroy = function(sender, me)
-  {
-    mxVertexHandler.prototype.destroy.apply(this, arguments);
-    if (this.domNode != null)
-    {
-      this.domNode.parentNode.removeChild(this.domNode);
-      this.domNode = null;
-    }
-  };
-
+  mxUtils.extend(ChoiceStateHandler, awssfStateHandler);
 
   WaitState = function(){};
   WaitState.prototype.type = 'Wait';
@@ -679,22 +480,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(WaitState);
   WaitStateHandler = function(state){
     this.custom = function(){
-      var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
-      img.setAttribute('title', 'Next');
-      img.style.cursor = 'pointer';
-      img.style.width = '16px';
-      img.style.height = '16px';
-      mxEvent.addGestureListeners(img,
-        mxUtils.bind(this, function(evt){
-          var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-          var edge = NextEdge.prototype.create();
-          this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-          this.graph.isMouseDown = true;
-          this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-          mxEvent.consume(evt);
-        })
-      );
-      this.domNode.appendChild(img);
+      this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
     };
     awssfStateHandler.apply(this, arguments);
   }
@@ -872,54 +658,9 @@ Draw.loadPlugin(function(ui) {
   registCodec(ParallelState);
   ParallelStateHandler = function(state){
     this.custom = function(){
-      var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
-      img.setAttribute('title', 'Next');
-      img.style.cursor = 'pointer';
-      img.style.width = '16px';
-      img.style.height = '16px';
-      mxEvent.addGestureListeners(img,
-        mxUtils.bind(this, function(evt){
-          var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-          var edge = NextEdge.prototype.create();
-          this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-          this.graph.isMouseDown = true;
-          this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-          mxEvent.consume(evt);
-        })
-      );
-      this.domNode.appendChild(img);
-      var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
-      img.setAttribute('title', 'Catch');
-      img.style.cursor = 'pointer';
-      img.style.width = '16px';
-      img.style.height = '16px';
-      mxEvent.addGestureListeners(img,
-        mxUtils.bind(this, function(evt){
-          var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-          var edge = CatchEdge.prototype.create();
-          this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-          this.graph.isMouseDown = true;
-          this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-          mxEvent.consume(evt);
-        })
-      );
-      this.domNode.appendChild(img);
-      var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACCUlEQVRIS7WVTUhUURTHf7NRN+JsUkER3UUI5kJMIoqBMNzkR6C7Elq5UReh0sIkgsCF0yJw5wdi2MYPEAyxLAhcuNBcFKLM4EJ0oU5I+FF648zzNe++d5/MM72rx7vn/M///s9XSCmlOO/EE7C8DUtbcDMfyvKgOHyui30ZMoInDqH9A0z8APl2n3AW1F6HvmqQb5/jBRfA5kkzqCnIwEMrkOHo4E8mYGg5rSdrRq2VEH3g8UuBC+O6seDAtsd4o+cFFrjoWvImJUWkBIbroCBbD3aiYH0XXn6BkW/6nWgfa9VyYIG75bDBZ9bg6VQKpKUCnt+BnQN49B5Wd/QAj8tgsPbfPws8/Bp+HqUM/cDFQpwlgS3TMLriZb/X4QCP7amkJM5zUXDBEGnO+iCkxr8rTyJN4NkZ0FwOHbdhcx8iQ7B/7C0AR2JDqvuTouezmbk7oX9OrU59NgvzcXNldd+FF/eSd+kxv1UIvfehNBeiC3jIOMNozNPV/MY1eNcARTnQNQf9i2bmmuZBqqWpFN7WwK/fJMv3Y0wPkJMJiU5XKaZb5+L2KgLtVfB1A+rH9KQa61w6tDiq13rQQSCs422GDhWgK5stNsuLTkVH+TkfbJ7nEsQ5DvwkEinscWCw8d9EbTOWVKYgAirzRWZ4oE3kZiA7VLrS3qGyR/9rhwatFB97syyXBP4Xec8Ry9TpbfEAAAAASUVORK5CYII=');
-      img.setAttribute('title', 'Retry');
-      img.style.cursor = 'pointer';
-      img.style.width = '16px';
-      img.style.height = '16px';
-      mxEvent.addGestureListeners(img,
-        mxUtils.bind(this, function(evt){
-          var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-          var edge = RetryEdge.prototype.create();
-          this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-          this.graph.isMouseDown = true;
-          this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-          mxEvent.consume(evt);
-        })
-      );
-      this.domNode.appendChild(img);
+      this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
+      this.domNode.appendChild(CatchEdge.prototype.createHandlerImage.apply(this, arguments));
+      this.domNode.appendChild(RetryEdge.prototype.createHandlerImage.apply(this, arguments));  
     };
     awssfStateHandler.apply(this, arguments);
   }
@@ -976,6 +717,24 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
+  NextEdge.prototype.createHandlerImage = function(){
+    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
+    img.setAttribute('title', 'Next');
+    img.style.cursor = 'pointer';
+    img.style.width = '16px';
+    img.style.height = '16px';
+    mxEvent.addGestureListeners(img,
+      mxUtils.bind(this, function(evt){
+        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
+        var edge = NextEdge.prototype.create();
+        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
+        this.graph.isMouseDown = true;
+        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
+        mxEvent.consume(evt);
+      })
+    );
+    return img;
+  };
   registCodec(NextEdge);
 
 
@@ -1005,6 +764,24 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
+  RetryEdge.prototype.createHandlerImage = function(){ 
+    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACCUlEQVRIS7WVTUhUURTHf7NRN+JsUkER3UUI5kJMIoqBMNzkR6C7Elq5UReh0sIkgsCF0yJw5wdi2MYPEAyxLAhcuNBcFKLM4EJ0oU5I+FF648zzNe++d5/MM72rx7vn/M///s9XSCmlOO/EE7C8DUtbcDMfyvKgOHyui30ZMoInDqH9A0z8APl2n3AW1F6HvmqQb5/jBRfA5kkzqCnIwEMrkOHo4E8mYGg5rSdrRq2VEH3g8UuBC+O6seDAtsd4o+cFFrjoWvImJUWkBIbroCBbD3aiYH0XXn6BkW/6nWgfa9VyYIG75bDBZ9bg6VQKpKUCnt+BnQN49B5Wd/QAj8tgsPbfPws8/Bp+HqUM/cDFQpwlgS3TMLriZb/X4QCP7amkJM5zUXDBEGnO+iCkxr8rTyJN4NkZ0FwOHbdhcx8iQ7B/7C0AR2JDqvuTouezmbk7oX9OrU59NgvzcXNldd+FF/eSd+kxv1UIvfehNBeiC3jIOMNozNPV/MY1eNcARTnQNQf9i2bmmuZBqqWpFN7WwK/fJMv3Y0wPkJMJiU5XKaZb5+L2KgLtVfB1A+rH9KQa61w6tDiq13rQQSCs422GDhWgK5stNsuLTkVH+TkfbJ7nEsQ5DvwkEinscWCw8d9EbTOWVKYgAirzRWZ4oE3kZiA7VLrS3qGyR/9rhwatFB97syyXBP4Xec8Ry9TpbfEAAAAASUVORK5CYII=');
+    img.setAttribute('title', 'Retry');
+    img.style.cursor = 'pointer';
+    img.style.width = '16px';
+    img.style.height = '16px';
+    mxEvent.addGestureListeners(img,
+      mxUtils.bind(this, function(evt){
+        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
+        var edge = RetryEdge.prototype.create();
+        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
+        this.graph.isMouseDown = true;
+        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
+        mxEvent.consume(evt);
+      })
+    );
+    return img;
+  };
   registCodec(RetryEdge);
 
   CatchEdge = function(){};
@@ -1025,6 +802,24 @@ Draw.loadPlugin(function(ui) {
     }else{
       return {};
     }
+  };
+  CatchEdge.prototype.createHandlerImage = function(){ 
+      var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
+    img.setAttribute('title', 'Catch');
+    img.style.cursor = 'pointer';
+    img.style.width = '16px';
+    img.style.height = '16px';
+    mxEvent.addGestureListeners(img,
+      mxUtils.bind(this, function(evt){
+        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
+        var edge = CatchEdge.prototype.create();
+        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
+        this.graph.isMouseDown = true;
+        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
+        mxEvent.consume(evt);
+      })
+    );
+    return img;
   };
   registCodec(CatchEdge);
 
@@ -1110,6 +905,24 @@ Draw.loadPlugin(function(ui) {
     }else{
       return {};
     }
+  };
+  ChoiceEdge.prototype.createHandlerImage = function(){ 
+    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACWUlEQVRIS7WVXW/SUBjH/12AGZDSDkkwQ40mytCxmC1z6Fx82RUXiiYz8WvMO/0AXrqPoYkandF4t+iWuSXTRMkcu1OUKbFAAWFCy1ZzaoCe9oDUl3PV5pzzO8/L/3keTtM0DV1WsdpAVlaRLSoICi4ERScEj6PbldYex4LX1F08fyNjM7MN8m1ee5x9GAq5ER8TQb47LQs8ldnG49U8E8p65ErMj0jIzeRT8EerObz9UO3JZeOhWNiL+OiA5V4LTiy+tyTZBjcvXJ8KWDzQ4SSuc/NbllCMHtmLWJhHwOdEHwc0djSkpToWkkVk8nXKEBL72cQglQMdzgrH9Iiggwnk5XoJXwp1/f90mMf3Hzu4vyxBKqvUAycPe3A1to9Wy+0Hn1BX24oM+ftxbTKAQkXF3cVvUBrtvYtRARNhL1Y2y3ixXrJYf3PmQBsuV1Rt7skWdejcsA9nhngsvi9hOVW2lYfZy4OtOuA2Plc1cyITp/w4cciDZ2t5vPtoTz3GxHILSVkzu3dp3I8ogb+2Dz8/7MOFqKB7y7R8MsJj6rgPSxvWsLgcnL6XK6tMryjLWTHvltCJY15Mj4hIpit4ulaw5IOKOZGiWS3khlGKr1JlpKVaS4o1ZRcPV3IWrfc7OdyaOUhLsVPZn43wGD/qBe92/LaICJGpc1Khd+YzlNZt6Q8AsfpGImStUAL6b72laeWfdkWj/IweM/s5ecTYDjqFiISC9JKe+nkT8msSFfRQsR4hUAKMjw3Ym0RmK8kM/SoryMoKgqIL+0XX381Qu0rpeYb+KzDh/AQ2ZmDL5ziOTgAAAABJRU5ErkJggg==');
+    img.setAttribute('title', 'Choice');
+    img.style.cursor = 'pointer';
+    img.style.width = '16px';
+    img.style.height = '16px';
+    mxEvent.addGestureListeners(img,
+      mxUtils.bind(this, function(evt){
+        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
+        var edge = ChoiceEdge.prototype.create();
+        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
+        this.graph.isMouseDown = true;
+        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
+        mxEvent.consume(evt);
+      })
+    );
+    return img;
   };
   registCodec(ChoiceEdge);
 
