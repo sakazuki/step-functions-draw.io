@@ -1381,6 +1381,7 @@ Draw.loadPlugin(function(ui) {
       if (cell.getAttribute("comment") == null) cell.setAttribute("comment", "");
       if (cell.getAttribute("timeout_seconds") == null) cell.setAttribute("timeout_seconds", "");
       if (cell.getAttribute("version") == null) cell.setAttribute("version", "");
+      if (cell.getAttribute("role_arn") == null) cell.setAttribute("role_arn", "");
       cell.awssf = {};
     }
     return;
@@ -1454,9 +1455,8 @@ Draw.loadPlugin(function(ui) {
 
   function getResourceList(callback){
     if (!setupAWSconfig()) return;
-    var lambda = new AWS.Lambda({apiVersion: '2015-03-31'});
-    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
     var funclist = [];
+    // var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
     // stepfunctions.listActivities({}, function(err, data){
     //   if (err) console.log(err, err.stack); // an error occurred
     //   else{
@@ -1465,6 +1465,7 @@ Draw.loadPlugin(function(ui) {
     //       funclist.push(func.activityArn);
     //     }
     //   };
+      var lambda = new AWS.Lambda({apiVersion: '2015-03-31'});
       lambda.listFunctions({}, function(err,data){
         if (err) console.log(err, err.stack); // an error occurred
         else{
@@ -1478,23 +1479,15 @@ Draw.loadPlugin(function(ui) {
     // });
   }
 
-  ui.actions.addAction('awssfLambda', function()
-  {
-    getResourceList(function(funclist){
-      mxUtils.popup(funclist.join("\n"), true);
-    });
-  });
-
   ui.actions.addAction('awssfDeploy', function()
   {
     if (!setupAWSconfig()) return;
     var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-    //var data = {Account: "700831962594"};
     getCallerIdentity(function(data){
       var params = {
         definition: JSON.stringify(getStepFunctionDefinition()),
         name: ui.editor.graph.getModel().cells[0].getAttribute("name"),
-        roleArn: 'arn:aws:iam::' + data.Account + ':role/service-role/StatesExecutionRole-us-west-2'
+        roleArn: ui.editor.graph.getModel().cells[0].getAttribute("role_arn")
       }; 
       stepfunctions.createStateMachine(params, function(err, data) {
         if (data) console.log(err, err.stack); // an error occurred
@@ -1506,31 +1499,12 @@ Draw.loadPlugin(function(ui) {
   ui.actions.addAction('awssfInvoke', function()
   {
     if (!setupAWSconfig()) return;
-    var iam = new AWS.IAM({apiVersion: '2010-05-08'});
-    var params = { RoleName: "arn:aws:iam::700831962594:role/service-role/StatesExecutionRole-us-west-2"};
-    iam.getRole(params, function(err, data){
-      if (err) console.log(err, err.stack); // an error occurred
-      else{
-        console.log(data);      
-        var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-        var funclist = [];
-        stepfunctions.listActivities({}, function(err, data){
-          if (err) console.log(err, err.stack); // an error occurred
-          else{
-            for(var i in data.activities){
-              var act = data.activities[i];
-              funclist.push(func.activityArn);
-            }
-          };
-          mxUtils.popup(funclist.join("\n"), true);
-        });
-      }
-    });
+    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
   });  
 
 	var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
 	{
-		ui.menus.addMenuItems(menu, ['-', /*'awssfValidate', */ 'awssfExportJSON', 'awssfExport' /*, '-', 'awssfLambda', 'awssfDeploy', 'awssfInvoke'*/]);
+		ui.menus.addMenuItems(menu, ['-', /*'awssfValidate', */ 'awssfExportJSON', 'awssfExport' /*, '-', 'awssfDeploy', 'awssfInvoke'*/]);
 	});
 	
 	// Inserts voice menu before help menu
