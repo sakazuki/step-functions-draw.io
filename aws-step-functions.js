@@ -1,5 +1,5 @@
 mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
-//mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.9.0.min.js");
+mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.9.0.min.js");
 // mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
 //mxscript("https://localhost:8000/js/aws-sdk-2.9.0.js");
 //mxscript("https://localhost:8000/js/jsep.min.js");
