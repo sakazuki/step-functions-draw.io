@@ -44,6 +44,27 @@ Draw.loadPlugin(function(ui) {
     },
     isChoice: function(cell){
       return (cell && cell.value && (cell.value.getAttribute("type") == "awssfChoice"));
+    },
+    isDefault: function(cell){
+      return (cell && cell.value && (cell.value.getAttribute("type") == "awssfDefault"));
+    },
+    createHandlerImage: function (cls, src){
+      var img = mxUtils.createImage(src);
+      img.setAttribute('title', cls.type);
+      img.style.cursor = 'pointer';
+      img.style.width = '16px';
+      img.style.height = '16px';
+      mxEvent.addGestureListeners(img,
+        mxUtils.bind(this, function(evt){
+          var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
+          var edge = cls.prototype.create();
+          this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
+          this.graph.isMouseDown = true;
+          this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
+          mxEvent.consume(evt);
+        })
+      );
+      return img;
     }
   }
 
@@ -93,10 +114,10 @@ Draw.loadPlugin(function(ui) {
   }
 
   function createAWSconfig(){
-    var cell = new mxCell('AWSconfig', new mxGeometry(0, 0, 70, 46), 'dashed=0;html=1;shape=mxgraph.aws2.non-service_specific.cloud;strokeColor=none;');
+    var cell = new mxCell('AWSconfig', new mxGeometry(0, 0, 70, 46), 'dashed=0;html=1;shape=mxgraph.aws2.non-service_specific.cloud;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;');
     cell.vertex = true;
     cell.value = mxUtils.createXmlDocument().createElement('object');
-    cell.setAttribute('label', '');  
+    cell.setAttribute('label', 'config');  
     cell.setAttribute('type', 'awssfAWSconfig');  
     cell.setAttribute('accessKeyId', '');
     cell.setAttribute('secretAccessKey', '');
@@ -237,7 +258,7 @@ Draw.loadPlugin(function(ui) {
   TaskState.prototype.type = 'Task';
   TaskState.prototype.create = function(){
     var cell = createState(this, TaskState, 'shape=mxgraph.flowchart.predefined_process;whiteSpace=wrap;gradientColor=none;html=1;');
-    cell.setAttribute('resource', 'arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME');
+    cell.setAttribute('resource', 'arn:aws:');
     cell.setAttribute('timeout_seconds', 60);
     cell.setAttribute('heartbeat_seconds', '');
     cell.setAttribute('result_path', '');
@@ -272,8 +293,13 @@ Draw.loadPlugin(function(ui) {
       data[label].HeartbeatSeconds = Number(cell.getAttribute("heartbeat_seconds"));
 
     var exist_outgoing_edge = false;
-    for(var i in cell.edges){
-      var edge = cell.edges[i];
+    var sorted_edges = cell.edges.sort(function(a, b){
+      if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
+      if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
+      return 0;
+    });    
+    for(var i in sorted_edges){
+      var edge = sorted_edges[i];
       if (edge.source != cell) continue;
       exist_outgoing_edge = true;
       if (edge.awssf && edge.awssf.toJSON){
@@ -333,14 +359,19 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("output_path"))
       data[label].OutputPath = cell.getAttribute("output_path");
 
-    for(var i in cell.edges){
-      var edge = cell.edges[i];
-      if (edge.source != cell) continue;      
+    var sorted_edges = cell.edges.sort(function(a, b){
+      if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
+      if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
+      return 0;
+    });
+    for(var i in sorted_edges){
+      var edge = sorted_edges[i];
+      if (edge.source != cell) continue;
       if (awssfUtils.isChoice(edge)){
         if (edge.awssf.toJSON)
           data[label].Choices.push(edge.awssf.toJSON(edge, cells))
       }
-      else if (awssfUtils.isNext(edge)){
+      else if (awssfUtils.isDefault(edge)){
         data[label].Default = cells[edge.target.id].getAttribute("label");
       }
     }
@@ -350,7 +381,7 @@ Draw.loadPlugin(function(ui) {
   ChoiceStateHandler = function(state){
     this.custom = function(){
       this.domNode.appendChild(ChoiceEdge.prototype.createHandlerImage.apply(this, arguments));
-      this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
+      this.domNode.appendChild(DefaultEdge.prototype.createHandlerImage.apply(this, arguments));
     };
     awssfStateHandler.apply(this, arguments);
   }
@@ -509,6 +540,11 @@ Draw.loadPlugin(function(ui) {
     return data;
   };
   registCodec(SucceedState);
+  SucceedStateHandler = function(state){
+    awssfStateHandler.apply(this, arguments);
+  }
+  SucceedState.prototype.handler = SucceedStateHandler;
+  mxUtils.extend(SucceedStateHandler, awssfStateHandler);
 
   FailState = function(){};
   FailState.prototype.type = 'Fail';
@@ -533,6 +569,11 @@ Draw.loadPlugin(function(ui) {
     return data;
   };
   registCodec(FailState);
+  FailStateHandler = function(state){
+    awssfStateHandler.apply(this, arguments);
+  }
+  FailState.prototype.handler = FailStateHandler;
+  mxUtils.extend(FailStateHandler, awssfStateHandler);
 
   ParallelState = function(){};
   ParallelState.prototype.type = 'Parallel';
@@ -631,8 +672,13 @@ Draw.loadPlugin(function(ui) {
       });
     }
     var exist_outgoing_edge = false;
-    for(var i in cell.edges){
-      var edge = cell.edges[i];
+    var sorted_edges = cell.edges.sort(function(a, b){
+      if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
+      if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
+      return 0;
+    });
+    for(var i in sorted_edges){
+      var edge = sorted_edges[i];
       if (edge.source != cell) continue;
       exist_outgoing_edge = true;
       if (edge.awssf.toJSON){
@@ -718,21 +764,7 @@ Draw.loadPlugin(function(ui) {
     }
   };
   NextEdge.prototype.createHandlerImage = function(){
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
-    img.setAttribute('title', 'Next');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = NextEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
+    var img = awssfUtils.createHandlerImage.call(this, NextEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
     return img;
   };
   registCodec(NextEdge);
@@ -764,22 +796,8 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
-  RetryEdge.prototype.createHandlerImage = function(){ 
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACCUlEQVRIS7WVTUhUURTHf7NRN+JsUkER3UUI5kJMIoqBMNzkR6C7Elq5UReh0sIkgsCF0yJw5wdi2MYPEAyxLAhcuNBcFKLM4EJ0oU5I+FF648zzNe++d5/MM72rx7vn/M///s9XSCmlOO/EE7C8DUtbcDMfyvKgOHyui30ZMoInDqH9A0z8APl2n3AW1F6HvmqQb5/jBRfA5kkzqCnIwEMrkOHo4E8mYGg5rSdrRq2VEH3g8UuBC+O6seDAtsd4o+cFFrjoWvImJUWkBIbroCBbD3aiYH0XXn6BkW/6nWgfa9VyYIG75bDBZ9bg6VQKpKUCnt+BnQN49B5Wd/QAj8tgsPbfPws8/Bp+HqUM/cDFQpwlgS3TMLriZb/X4QCP7amkJM5zUXDBEGnO+iCkxr8rTyJN4NkZ0FwOHbdhcx8iQ7B/7C0AR2JDqvuTouezmbk7oX9OrU59NgvzcXNldd+FF/eSd+kxv1UIvfehNBeiC3jIOMNozNPV/MY1eNcARTnQNQf9i2bmmuZBqqWpFN7WwK/fJMv3Y0wPkJMJiU5XKaZb5+L2KgLtVfB1A+rH9KQa61w6tDiq13rQQSCs422GDhWgK5stNsuLTkVH+TkfbJ7nEsQ5DvwkEinscWCw8d9EbTOWVKYgAirzRWZ4oE3kZiA7VLrS3qGyR/9rhwatFB97syyXBP4Xec8Ry9TpbfEAAAAASUVORK5CYII=');
-    img.setAttribute('title', 'Retry');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = RetryEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
+  RetryEdge.prototype.createHandlerImage = function(){
+    var img = awssfUtils.createHandlerImage.call(this, RetryEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACCUlEQVRIS7WVTUhUURTHf7NRN+JsUkER3UUI5kJMIoqBMNzkR6C7Elq5UReh0sIkgsCF0yJw5wdi2MYPEAyxLAhcuNBcFKLM4EJ0oU5I+FF648zzNe++d5/MM72rx7vn/M///s9XSCmlOO/EE7C8DUtbcDMfyvKgOHyui30ZMoInDqH9A0z8APl2n3AW1F6HvmqQb5/jBRfA5kkzqCnIwEMrkOHo4E8mYGg5rSdrRq2VEH3g8UuBC+O6seDAtsd4o+cFFrjoWvImJUWkBIbroCBbD3aiYH0XXn6BkW/6nWgfa9VyYIG75bDBZ9bg6VQKpKUCnt+BnQN49B5Wd/QAj8tgsPbfPws8/Bp+HqUM/cDFQpwlgS3TMLriZb/X4QCP7amkJM5zUXDBEGnO+iCkxr8rTyJN4NkZ0FwOHbdhcx8iQ7B/7C0AR2JDqvuTouezmbk7oX9OrU59NgvzcXNldd+FF/eSd+kxv1UIvfehNBeiC3jIOMNozNPV/MY1eNcARTnQNQf9i2bmmuZBqqWpFN7WwK/fJMv3Y0wPkJMJiU5XKaZb5+L2KgLtVfB1A+rH9KQa61w6tDiq13rQQSCs422GDhWgK5stNsuLTkVH+TkfbJ7nEsQ5DvwkEinscWCw8d9EbTOWVKYgAirzRWZ4oE3kZiA7VLrS3qGyR/9rhwatFB97syyXBP4Xec8Ry9TpbfEAAAAASUVORK5CYII=');
     return img;
   };
   registCodec(RetryEdge);
@@ -790,6 +808,7 @@ Draw.loadPlugin(function(ui) {
     if (label == null ) label = this.type;
     var cell = createEdge(this, CatchEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');    
     cell.setAttribute('error_equals', '');
+    cell.setAttribute('weight', '1');
     return cell;
   };
   CatchEdge.prototype.toJSON = function(cell, cells){
@@ -804,21 +823,7 @@ Draw.loadPlugin(function(ui) {
     }
   };
   CatchEdge.prototype.createHandlerImage = function(){ 
-      var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
-    img.setAttribute('title', 'Catch');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = CatchEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
+      var img = awssfUtils.createHandlerImage.call(this, CatchEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
     return img;
   };
   registCodec(CatchEdge);
@@ -831,6 +836,7 @@ Draw.loadPlugin(function(ui) {
     cell.setAttribute('label', '%condition%');
     cell.setAttribute('placeholders', 1);  
     cell.setAttribute('condition', '$.dummy == 1');
+    cell.setAttribute('weight', '1');    
     return cell;
   };
   ChoiceEdge.prototype.toJSON = function(cell, cells){
@@ -907,24 +913,33 @@ Draw.loadPlugin(function(ui) {
     }
   };
   ChoiceEdge.prototype.createHandlerImage = function(){ 
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACWUlEQVRIS7WVXW/SUBjH/12AGZDSDkkwQ40mytCxmC1z6Fx82RUXiiYz8WvMO/0AXrqPoYkandF4t+iWuSXTRMkcu1OUKbFAAWFCy1ZzaoCe9oDUl3PV5pzzO8/L/3keTtM0DV1WsdpAVlaRLSoICi4ERScEj6PbldYex4LX1F08fyNjM7MN8m1ee5x9GAq5ER8TQb47LQs8ldnG49U8E8p65ErMj0jIzeRT8EerObz9UO3JZeOhWNiL+OiA5V4LTiy+tyTZBjcvXJ8KWDzQ4SSuc/NbllCMHtmLWJhHwOdEHwc0djSkpToWkkVk8nXKEBL72cQglQMdzgrH9Iiggwnk5XoJXwp1/f90mMf3Hzu4vyxBKqvUAycPe3A1to9Wy+0Hn1BX24oM+ftxbTKAQkXF3cVvUBrtvYtRARNhL1Y2y3ixXrJYf3PmQBsuV1Rt7skWdejcsA9nhngsvi9hOVW2lYfZy4OtOuA2Plc1cyITp/w4cciDZ2t5vPtoTz3GxHILSVkzu3dp3I8ogb+2Dz8/7MOFqKB7y7R8MsJj6rgPSxvWsLgcnL6XK6tMryjLWTHvltCJY15Mj4hIpit4ulaw5IOKOZGiWS3khlGKr1JlpKVaS4o1ZRcPV3IWrfc7OdyaOUhLsVPZn43wGD/qBe92/LaICJGpc1Khd+YzlNZt6Q8AsfpGImStUAL6b72laeWfdkWj/IweM/s5ecTYDjqFiISC9JKe+nkT8msSFfRQsR4hUAKMjw3Ym0RmK8kM/SoryMoKgqIL+0XX381Qu0rpeYb+KzDh/AQ2ZmDL5ziOTgAAAABJRU5ErkJggg==');
-    img.setAttribute('title', 'Choice');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
-    mxEvent.addGestureListeners(img,
-      mxUtils.bind(this, function(evt){
-        var pt = mxUtils.convertPoint(this.graph.container, mxEvent.getClientX(evt), mxEvent.getClientY(evt));
-        var edge = ChoiceEdge.prototype.create();
-        this.graph.connectionHandler.start(this.state, pt.x, pt.y, new mxCellState(this.graph.view, edge, this.graph.getCellStyle(edge)));
-        this.graph.isMouseDown = true;
-        this.graph.isMouseTrigger = mxEvent.isMouseEvent(evt);
-        mxEvent.consume(evt);
-      })
-    );
+    var img = awssfUtils.createHandlerImage.call(this, ChoiceEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACWUlEQVRIS7WVXW/SUBjH/12AGZDSDkkwQ40mytCxmC1z6Fx82RUXiiYz8WvMO/0AXrqPoYkandF4t+iWuSXTRMkcu1OUKbFAAWFCy1ZzaoCe9oDUl3PV5pzzO8/L/3keTtM0DV1WsdpAVlaRLSoICi4ERScEj6PbldYex4LX1F08fyNjM7MN8m1ee5x9GAq5ER8TQb47LQs8ldnG49U8E8p65ErMj0jIzeRT8EerObz9UO3JZeOhWNiL+OiA5V4LTiy+tyTZBjcvXJ8KWDzQ4SSuc/NbllCMHtmLWJhHwOdEHwc0djSkpToWkkVk8nXKEBL72cQglQMdzgrH9Iiggwnk5XoJXwp1/f90mMf3Hzu4vyxBKqvUAycPe3A1to9Wy+0Hn1BX24oM+ftxbTKAQkXF3cVvUBrtvYtRARNhL1Y2y3ixXrJYf3PmQBsuV1Rt7skWdejcsA9nhngsvi9hOVW2lYfZy4OtOuA2Plc1cyITp/w4cciDZ2t5vPtoTz3GxHILSVkzu3dp3I8ogb+2Dz8/7MOFqKB7y7R8MsJj6rgPSxvWsLgcnL6XK6tMryjLWTHvltCJY15Mj4hIpit4ulaw5IOKOZGiWS3khlGKr1JlpKVaS4o1ZRcPV3IWrfc7OdyaOUhLsVPZn43wGD/qBe92/LaICJGpc1Khd+YzlNZt6Q8AsfpGImStUAL6b72laeWfdkWj/IweM/s5ecTYDjqFiISC9JKe+nkT8msSFfRQsR4hUAKMjw3Ym0RmK8kM/SoryMoKgqIL+0XX381Qu0rpeYb+KzDh/AQ2ZmDL5ziOTgAAAABJRU5ErkJggg==');
     return img;
   };
   registCodec(ChoiceEdge);
+
+  DefaultEdge = function DefaultEdge(){};
+  DefaultEdge.prototype.type = 'Default';  
+  DefaultEdge.prototype.create = function(label){
+    if (label == null ) label = this.type;  
+    var cell = createEdge(this, DefaultEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');
+    return cell;
+  };
+  DefaultEdge.prototype.toJSON = function(cell, cells){
+    if (cell.target != null){
+      var data = {
+        Default: cells[cell.target.id].getAttribute("label")
+      }
+      return data;
+    }else{
+      return {};
+    }
+  };
+  DefaultEdge.prototype.createHandlerImage = function(){
+    var img = awssfUtils.createHandlerImage.call(this, DefaultEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAYCAYAAAARfGZ1AAABsklEQVRIS9WVO0sDQRDH/9ek0YAQsEgQFCRpxCaKmuoOQRtN7aOxEVtBP0B8gCARrESwsdI+WoggHkGDoH6ABPGJdhYaEY3Fyma53L5yXoIRHLjmduY3s/PYMQghBB5SfAKeC+wLRdkXDHtZuGeGDl4qArk14NYGSm8qKNAMtJtAYg4IBKs7UuAUaKf0UBlDnZgp5kgnApxCC/v+rsxrdY0BiXnVrgKnER9qFPy6GkqrNyjDaY53Rt1UhHsAaxFoauXQBPgsAndZ4HQV+HoX3dIUTeyJNSjD5XQ48IcckF1mkJYOoHsS6BwGro9YXWSJjrAaOFKGb5tiAXVwx8BaAtoGgFwauDpQo5+yOfjrIyG7SVHJCx5LAv2zQD4DnK2r0Y9n3Dkwbo4JkQvpBfc6o674whoXm4RcbvmPPNIHWAvA/YlbD946Pg3EZ9ifmiP/KS1C5LXmfHAFiPSyqOlsyCLk3G+3+GlF2utCt3j1uTxEHy+s/c431CGiN9D2uTyhfkee16s6oVSpYW+LE0G9ryLffvxt/u49d7w2bBPJxazs0DwQiv3CDq2nW3Q22gX9L+Df4kMPyOkzB4MAAAAASUVORK5CYII=');
+    return img;
+  };
+  registCodec(DefaultEdge);
 
 	// Avoids having to bind all functions to "this"
 	var sb = ui.sidebar;
@@ -932,18 +947,18 @@ Draw.loadPlugin(function(ui) {
   // Adds custom sidebar entry
   sb.addPalette('awsStepFunctions', 'AWS Step Functions', true, function(content) {
     
-    // var cell = createAWSconfig();
-    // content.appendChild(sb.createVertexTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label));
+    var cell = createAWSconfig();
+    content.appendChild(sb.createVertexTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label));
     var verticies = [StartPoint, EndPoint, TaskState, PassState, ChoiceState, WaitState, SucceedState, FailState, ParallelState];
     for (var i in verticies){
       var cell = verticies[i].prototype.create();
       content.appendChild(sb.createVertexTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label));
     }
-    var edges = [NextEdge, ChoiceEdge, RetryEdge, CatchEdge];
-    for (var i in edges){
-      var cell = edges[i].prototype.create();
-      content.appendChild(sb.createEdgeTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label, true, false));
-    }
+    // var edges = [NextEdge, ChoiceEdge, RetryEdge, CatchEdge];
+    // for (var i in edges){
+    //   var cell = edges[i].prototype.create();
+    //   content.appendChild(sb.createEdgeTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label, true, false));
+    // }
   });
 
   // Collapses default sidebar entry and inserts this before
@@ -1030,7 +1045,7 @@ Draw.loadPlugin(function(ui) {
     }
     var label = cell.getAttribute("label");
     if (cell.isVertex() && names[label]){
-      if (label == "awssfStart"){
+      if (awssfUtils.isStart(cell)){
         // var found_same_parent = false;
         // for(var i in names[label]){
         //   if (cell.parent.id == names[label][i].parent.id){
@@ -1039,7 +1054,13 @@ Draw.loadPlugin(function(ui) {
         //   }
         // }
       }else{
-        cell.setAttribute("label", cell.getAttribute("label").replace(/(\d*)$/, (names[label].length + 1)));
+        var index = 2;
+        var new_label = label.replace(/(\d*)$/, index);
+        while(names[new_label]){
+          index++;
+          new_label = label.replace(/(\d*)$/, index);
+        }
+        cell.setAttribute("label", new_label);
       }
     }
     setupRoot();
@@ -1054,7 +1075,7 @@ Draw.loadPlugin(function(ui) {
     var div = document.createElement('div');
     var graph = ui.editor ? ui.editor.graph : ui.graph;
 
-    div.style.height = '310px';
+    div.style.height = '100%'; //'310px';
     div.style.overflow = 'auto';
     
     var value = graph.getModel().getValue(cell);
@@ -1087,7 +1108,15 @@ Draw.loadPlugin(function(ui) {
       names[index] = name;
       texts[index] = form.addTextarea(names[count] + ':', value, 2);
       texts[index].style.width = '100%';
-      
+      return texts[index];
+    };
+
+    var addText = function(index, name, value)
+    {
+      names[index] = name;
+      texts[index] = form.addText(names[count] + ':', value);
+      texts[index].style.width = '100%';
+      return texts[index];
     };
 
     for (var i = 0; i < attrs.length; i++)
@@ -1100,6 +1129,38 @@ Draw.loadPlugin(function(ui) {
         mxUtils.write(span, nodeValue);
         form.addField('type:', span);
       }
+      else if (AWS && (nodeName == 'resource')){
+        var input = addText(count, nodeName, nodeValue);
+        count++;
+        input.setAttribute("list", "resources");
+        var datalist = document.createElement('datalist');
+        datalist.id = "resources";
+        getResourceList(function(resources){
+          for (var j in resources){
+            var opt = document.createElement('option');
+            opt.value = resources[j];
+            datalist.appendChild(opt);
+          };
+        });
+        div.appendChild(datalist);
+      }
+      else if (nodeName == 'error_equals'){
+        var input = addText(count, nodeName, nodeValue);
+        count++;
+        input.setAttribute("list", "errors");
+        var datalist = document.createElement('datalist');
+        datalist.id = "errors";
+        var errors = [
+          "States.ALL", "States.Timeout", "States.TaskFailed", "States.Permissions",
+          "States.ResultPathMatchFailure", "States.BranchFailed", "States.NoChoiceMatched"
+        ];
+        for (var j in errors){
+          var opt = document.createElement('option');
+          opt.value = errors[j];
+          datalist.appendChild(opt);
+        };
+        div.appendChild(datalist);
+      }
       else if (cell.awssf && cell.awssf.buildForm){
         var res = cell.awssf.buildForm(form, nodeName, nodeValue);
         if (res != null){
@@ -1108,7 +1169,7 @@ Draw.loadPlugin(function(ui) {
           count++;
         }
       }
-      else if (nodeName != 'label' && nodeName != 'placeholders')
+      else if (/*nodeName != 'label' && */nodeName != 'placeholders')
       {
         addTextArea(count, nodeName, nodeValue);
         count++;
@@ -1391,20 +1452,19 @@ Draw.loadPlugin(function(ui) {
     });    
   }
 
-  ui.actions.addAction('awssfLambda', function()
-  {
+  function getResourceList(callback){
     if (!setupAWSconfig()) return;
     var lambda = new AWS.Lambda({apiVersion: '2015-03-31'});
     var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
     var funclist = [];
-    stepfunctions.listActivities({}, function(err, data){
-      if (err) console.log(err, err.stack); // an error occurred
-      else{
-        for(var i in data.activities){
-          var act = data.activities[i];
-          funclist.push(func.activityArn);
-        }
-      };
+    // stepfunctions.listActivities({}, function(err, data){
+    //   if (err) console.log(err, err.stack); // an error occurred
+    //   else{
+    //     for(var i in data.activities){
+    //       var act = data.activities[i];
+    //       funclist.push(func.activityArn);
+    //     }
+    //   };
       lambda.listFunctions({}, function(err,data){
         if (err) console.log(err, err.stack); // an error occurred
         else{
@@ -1412,9 +1472,16 @@ Draw.loadPlugin(function(ui) {
             var func = data.Functions[i];
             funclist.push(func.FunctionArn);
           }
-          mxUtils.popup(funclist.join("\n"), true);
+          callback(funclist);
         }
       });
+    // });
+  }
+
+  ui.actions.addAction('awssfLambda', function()
+  {
+    getResourceList(function(funclist){
+      mxUtils.popup(funclist.join("\n"), true);
     });
   });
 
