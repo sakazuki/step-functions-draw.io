@@ -50,7 +50,7 @@ Draw.loadPlugin(function(ui) {
     },
     createHandlerImage: function (cls, src){
       var img = mxUtils.createImage(src);
-      img.setAttribute('title', cls.type);
+      img.setAttribute('title', cls.prototype.type);
       img.style.cursor = 'pointer';
       img.style.width = '16px';
       img.style.height = '16px';
@@ -65,6 +65,18 @@ Draw.loadPlugin(function(ui) {
         })
       );
       return img;
+    },
+    validateTimestamp: function(val){
+      if (!val) return true;
+      return (val.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/))
+    },
+    validateNumber: function(val){
+      if (!val) return true;
+      return (val.match(/^\d+$/))
+    },
+    validateJsonPath: function(val){
+      if (!val) return true;
+      return (val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/))
     }
   }
 
@@ -96,49 +108,13 @@ Draw.loadPlugin(function(ui) {
     return cell;
   }
 
-  StartPoint = function(){};
-  StartPoint.prototype.type = 'Start';
-  StartPoint.prototype.create = function(geometry){
-    var cell = createPoint(this, StartPoint, geometry);
-    return cell;
-  }
-  StartPoint.prototype.create_default_edge = function(){
-    return NextEdge.prototype.create("StartAt");
-  }
-
-  EndPoint = function(){};
-  EndPoint.prototype.type = 'End';
-  EndPoint.prototype.create = function(){
-    var cell = createPoint(this, EndPoint);
-    return cell;
-  }
-
-  function createAWSconfig(){
-    var cell = new mxCell('AWSconfig', new mxGeometry(0, 0, 70, 46), 'dashed=0;html=1;shape=mxgraph.aws2.non-service_specific.cloud;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;');
-    cell.vertex = true;
-    cell.value = mxUtils.createXmlDocument().createElement('object');
-    cell.setAttribute('label', 'config');  
-    cell.setAttribute('type', 'awssfAWSconfig');  
-    cell.setAttribute('accessKeyId', '');
-    cell.setAttribute('secretAccessKey', '');
-    cell.setAttribute('region', '');
-    cell.awssf = {};
-    return cell;
-  }
-
-  function createState(awssf, state, style){
-    var label = state.prototype.type;
-    if (!style) style = 'rounded=1;whiteSpace=wrap;html=1;gradientColor=none;dashed=1';
-    var cell = new mxCell(label, new mxGeometry(0, 0, 80, 40), style);
-    cell.vertex = true;
-    cell.value = mxUtils.createXmlDocument().createElement('object');
-    cell.setAttribute('label', label);
-    cell.setAttribute('type', 'awssf' + label);
-    cell.setAttribute('comment', '');
-    cell.setAttribute('input_path', '');
-    cell.setAttribute('output_path', '');
-    cell.awssf = awssf;
-    return cell;
+  function createSettingsIcon(){
+    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACpklEQVRIS7VVMU9TURg9nWiZoF0k1MQmlKCREhhowUHaScpWdYHoINUORoKTiT+AhMnE6IDigraL2g10amGhxaFGMJHQJiWxBJcWJl6Zas4H9/leH4VKwl2a13vv+c73nfN911ar1Wq4oGVrBpzxq9VDnYLd3gKbzXYmpabAs2s5bBWKCAwOIPstJ7/dXs/5wNMrGfh6e+BytgvA4pcU3J0d6PNdRWp5FZpWxdhoSPbKlT2sb2wieHPIEszC/H08iQNNQ6m0i1DwBhwOu4BPP3kgwUo7u+CZ4MiwBMlkc3C52tDqcODeRMQUwAROVvlCEbHohFz8mFyUw2SpsuA3A/AsAblHAnPzcXi7PAiNDOsBTOBMce5tAk+nJuWCceUL2/qnt+uKaY9EXrx8h9jDcRMJS1nIqFLZx51IWAB+rP+SsjB11p2sy+V9YUwNuD4ll+B0tplY838LuHLG/YnbOnA9I5WhCrAQ/4zuLg8C/gFrzenjjZ+bKO38QWYtp4s3M/vakqq6rQI8f/ZYHPNmPoE+3zW4Oy+h93qP9IEwV+Ixutfrkbpt5YtIr6yKuI0W60z29DwD5PNF6Ye7kTHRTAf/Xdo1NQbB6Rzl55MCUAs6xNhQvHfZ3WEGpyhkTSecm3lhW9jTDDpz1pxdRifQHUrA/6k5LUz30FHsbr3mxpTr3bL0NYVHUbN/lYDhW0d2PNUtRvDGPm+XWlKbcnnP5POmwE/rUAqlVv1EpNtmZl9hemqycYcezZZtxKLjMlsoMld4NGiZLenljIj2b7YkxAwNZwuBmKKmHUrqAX8/WtVUPGZF0Rc+JBEaGcKBVkV27TtcrnY4HC1gVxvXiY8FM6BQzcxzBmPJjIxVgKZfIpaLs4Nu8g/2n/8lqu/GC31DGw6XMzb+An4I4cvYKbPGAAAAAElFTkSuQmCC');
+    img.setAttribute('title', 'Settings');
+    img.style.cursor = 'pointer';
+    img.style.width = '16px';
+    img.style.height = '16px';
+    return img;
   }
 
   awssfStateHandler = function(state){
@@ -153,11 +129,7 @@ Draw.loadPlugin(function(ui) {
     this.domNode.style.position = 'absolute';
     this.domNode.style.whiteSpace = 'nowrap';
     if (this.custom) this.custom.apply(this, arguments);
-    var img = mxUtils.createImage('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACpklEQVRIS7VVMU9TURg9nWiZoF0k1MQmlKCREhhowUHaScpWdYHoINUORoKTiT+AhMnE6IDigraL2g10amGhxaFGMJHQJiWxBJcWJl6Zas4H9/leH4VKwl2a13vv+c73nfN911ar1Wq4oGVrBpzxq9VDnYLd3gKbzXYmpabAs2s5bBWKCAwOIPstJ7/dXs/5wNMrGfh6e+BytgvA4pcU3J0d6PNdRWp5FZpWxdhoSPbKlT2sb2wieHPIEszC/H08iQNNQ6m0i1DwBhwOu4BPP3kgwUo7u+CZ4MiwBMlkc3C52tDqcODeRMQUwAROVvlCEbHohFz8mFyUw2SpsuA3A/AsAblHAnPzcXi7PAiNDOsBTOBMce5tAk+nJuWCceUL2/qnt+uKaY9EXrx8h9jDcRMJS1nIqFLZx51IWAB+rP+SsjB11p2sy+V9YUwNuD4ll+B0tplY838LuHLG/YnbOnA9I5WhCrAQ/4zuLg8C/gFrzenjjZ+bKO38QWYtp4s3M/vakqq6rQI8f/ZYHPNmPoE+3zW4Oy+h93qP9IEwV+Ixutfrkbpt5YtIr6yKuI0W60z29DwD5PNF6Ye7kTHRTAf/Xdo1NQbB6Rzl55MCUAs6xNhQvHfZ3WEGpyhkTSecm3lhW9jTDDpz1pxdRifQHUrA/6k5LUz30FHsbr3mxpTr3bL0NYVHUbN/lYDhW0d2PNUtRvDGPm+XWlKbcnnP5POmwE/rUAqlVv1EpNtmZl9hemqycYcezZZtxKLjMlsoMld4NGiZLenljIj2b7YkxAwNZwuBmKKmHUrqAX8/WtVUPGZF0Rc+JBEaGcKBVkV27TtcrnY4HC1gVxvXiY8FM6BQzcxzBmPJjIxVgKZfIpaLs4Nu8g/2n/8lqu/GC31DGw6XMzb+An4I4cvYKbPGAAAAAElFTkSuQmCC');
-    img.setAttribute('title', 'Settings');
-    img.style.cursor = 'pointer';
-    img.style.width = '16px';
-    img.style.height = '16px';
+    var img = createSettingsIcon();
     mxEvent.addGestureListeners(img,
       mxUtils.bind(this, function(evt){ mxEvent.consume(evt);})
     );
@@ -195,6 +167,102 @@ Draw.loadPlugin(function(ui) {
     }
   };
 
+  awssfEdgeHandler = function(state){
+    mxEdgeHandler.apply(this, arguments);
+  }
+  awssfEdgeHandler.prototype = new mxEdgeHandler();
+  awssfEdgeHandler.prototype.constructor = awssfEdgeHandler;
+  awssfEdgeHandler.prototype.domNode = null;
+  awssfEdgeHandler.prototype.init = function(){
+    mxEdgeHandler.prototype.init.apply(this, arguments);
+    this.domNode = document.createElement('div');
+    this.domNode.style.position = 'absolute';
+    this.domNode.style.whiteSpace = 'nowrap';
+    if (this.custom) this.custom.apply(this, arguments);
+    var img = createSettingsIcon();
+    mxEvent.addGestureListeners(img,
+      mxUtils.bind(this, function(evt){ mxEvent.consume(evt);})
+    );
+    mxEvent.addListener(img, 'click',
+      mxUtils.bind(this, function(evt){
+        ui.actions.get('editData').funct();
+        mxEvent.consume(evt);
+      })
+    );
+    this.domNode.appendChild(img);
+    this.graph.container.appendChild(this.domNode);
+    this.redrawTools();
+  };
+  awssfEdgeHandler.prototype.redraw = function()
+  {
+    mxEdgeHandler.prototype.redraw.apply(this);
+    this.redrawTools();
+  };
+  awssfEdgeHandler.prototype.redrawTools = function()
+  {
+    if (this.state != null && this.domNode != null)
+    {
+      var dy = (mxClient.IS_VML && document.compatMode == 'CSS1Compat') ? 20 : 4;
+      this.domNode.style.left = (this.labelShape.bounds.x + this.labelShape.bounds.width) + 'px';
+      this.domNode.style.top = (this.labelShape.bounds.y) + 'px';
+    }
+  };
+  awssfEdgeHandler.prototype.destroy = function(sender, me)
+  {
+    mxEdgeHandler.prototype.destroy.apply(this, arguments);
+    if (this.domNode != null)
+    {
+      this.domNode.parentNode.removeChild(this.domNode);
+      this.domNode = null;
+    }
+  };
+
+
+
+  StartPoint = function(){};
+  StartPoint.prototype.type = 'Start';
+  StartPoint.prototype.create = function(geometry){
+    var cell = createPoint(this, StartPoint, geometry);
+    return cell;
+  }
+  StartPoint.prototype.create_default_edge = function(){
+    return StartAtEdge.prototype.create();
+  }
+
+  EndPoint = function(){};
+  EndPoint.prototype.type = 'End';
+  EndPoint.prototype.create = function(){
+    var cell = createPoint(this, EndPoint);
+    return cell;
+  }
+
+  function createAWSconfig(){
+    var cell = new mxCell('AWSconfig', new mxGeometry(0, 0, 70, 46), 'dashed=0;html=1;shape=mxgraph.aws2.non-service_specific.cloud;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;');
+    cell.vertex = true;
+    cell.value = mxUtils.createXmlDocument().createElement('object');
+    cell.setAttribute('label', 'config');  
+    cell.setAttribute('type', 'awssfAWSconfig');  
+    cell.setAttribute('accessKeyId', '');
+    cell.setAttribute('secretAccessKey', '');
+    cell.setAttribute('region', '');
+    cell.awssf = {handler: awssfStateHandler};
+    return cell;
+  }
+
+  function createState(awssf, state, style){
+    var label = state.prototype.type;
+    if (!style) style = 'rounded=1;whiteSpace=wrap;html=1;gradientColor=none;dashed=1';
+    var cell = new mxCell(label, new mxGeometry(0, 0, 80, 40), style);
+    cell.vertex = true;
+    cell.value = mxUtils.createXmlDocument().createElement('object');
+    cell.setAttribute('label', label);
+    cell.setAttribute('type', 'awssf' + label);
+    cell.setAttribute('comment', '');
+    cell.setAttribute('input_path', '');
+    cell.setAttribute('output_path', '');
+    cell.awssf = awssf;
+    return cell;
+  }
 
   PassState = function(){};
   PassState.prototype.type = 'Pass';
@@ -406,6 +474,22 @@ Draw.loadPlugin(function(ui) {
   WaitState.prototype.cst = {
     DURATION_FORMAT: ["Seconds", "SecondsPath", "Timestamp", "TimestampPath"]
   };
+  WaitState.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (!awssfUtils.validateTimestamp(cell.getAttribute("timestamp"))){
+      res.push("timestamp must be valid formated");
+    }
+    if (!awssfUtils.validateNumber(cell.getAttribute("seconds"))){
+      res.push("seconds must be number");
+    }
+    if (!awssfUtils.validateJsonPath(cell.getAttribute("seconds_path"))){
+      res.push("second_path must use only supported jsonpath");
+    }
+    if (!awssfUtils.validateJsonPath(cell.getAttribute("timestamp_path"))){
+      res.push("timestamp_path must use only supported jsonpath");
+    }
+    return res;
+  };
   WaitState.prototype.toJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
@@ -540,11 +624,7 @@ Draw.loadPlugin(function(ui) {
     return data;
   };
   registCodec(SucceedState);
-  SucceedStateHandler = function(state){
-    awssfStateHandler.apply(this, arguments);
-  }
-  SucceedState.prototype.handler = SucceedStateHandler;
-  mxUtils.extend(SucceedStateHandler, awssfStateHandler);
+  SucceedState.prototype.handler = awssfStateHandler;
 
   FailState = function(){};
   FailState.prototype.type = 'Fail';
@@ -569,11 +649,7 @@ Draw.loadPlugin(function(ui) {
     return data;
   };
   registCodec(FailState);
-  FailStateHandler = function(state){
-    awssfStateHandler.apply(this, arguments);
-  }
-  FailState.prototype.handler = FailStateHandler;
-  mxUtils.extend(FailStateHandler, awssfStateHandler);
+  FailState.prototype.handler = awssfStateHandler;
 
   ParallelState = function(){};
   ParallelState.prototype.type = 'Parallel';
@@ -743,6 +819,7 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
+  // StartAtEdge.prototype.handler = awssfStateHandler;
   registCodec(StartAtEdge);
 
 
@@ -767,6 +844,7 @@ Draw.loadPlugin(function(ui) {
     var img = awssfUtils.createHandlerImage.call(this, NextEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
     return img;
   };
+  // NextEdge.prototype.handler = awssfEdgeHandler;
   registCodec(NextEdge);
 
 
@@ -777,10 +855,13 @@ Draw.loadPlugin(function(ui) {
     var cell = createEdge(this, RetryEdge, label, 'edgeStyle=orthogonalEdgeStyle;curved=1;html=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;startArrow=none;startFill=0;jettySize=auto;orthogonalLoop=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');  
     cell.geometry.setTerminalPoint(new mxPoint(0, cell.geometry.height), true);
     cell.geometry.setTerminalPoint(new mxPoint(cell.geometry.width, 0), false);
+    // cell.setAttribute('label', '%error_equals%');
+    cell.setAttribute('placeholders', 1);
     cell.setAttribute('error_equals', '');
     cell.setAttribute('interval_seconds', 1);
     cell.setAttribute('max_attempts', 3);
     cell.setAttribute('backoff_rate', 2);
+    cell.setAttribute('weight', 1);
     return cell;
   };
   RetryEdge.prototype.toJSON = function(cell, cells){
@@ -800,6 +881,7 @@ Draw.loadPlugin(function(ui) {
     var img = awssfUtils.createHandlerImage.call(this, RetryEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACCUlEQVRIS7WVTUhUURTHf7NRN+JsUkER3UUI5kJMIoqBMNzkR6C7Elq5UReh0sIkgsCF0yJw5wdi2MYPEAyxLAhcuNBcFKLM4EJ0oU5I+FF648zzNe++d5/MM72rx7vn/M///s9XSCmlOO/EE7C8DUtbcDMfyvKgOHyui30ZMoInDqH9A0z8APl2n3AW1F6HvmqQb5/jBRfA5kkzqCnIwEMrkOHo4E8mYGg5rSdrRq2VEH3g8UuBC+O6seDAtsd4o+cFFrjoWvImJUWkBIbroCBbD3aiYH0XXn6BkW/6nWgfa9VyYIG75bDBZ9bg6VQKpKUCnt+BnQN49B5Wd/QAj8tgsPbfPws8/Bp+HqUM/cDFQpwlgS3TMLriZb/X4QCP7amkJM5zUXDBEGnO+iCkxr8rTyJN4NkZ0FwOHbdhcx8iQ7B/7C0AR2JDqvuTouezmbk7oX9OrU59NgvzcXNldd+FF/eSd+kxv1UIvfehNBeiC3jIOMNozNPV/MY1eNcARTnQNQf9i2bmmuZBqqWpFN7WwK/fJMv3Y0wPkJMJiU5XKaZb5+L2KgLtVfB1A+rH9KQa61w6tDiq13rQQSCs422GDhWgK5stNsuLTkVH+TkfbJ7nEsQ5DvwkEinscWCw8d9EbTOWVKYgAirzRWZ4oE3kZiA7VLrS3qGyR/9rhwatFB97syyXBP4Xec8Ry9TpbfEAAAAASUVORK5CYII=');
     return img;
   };
+  RetryEdge.prototype.handler = awssfEdgeHandler;
   registCodec(RetryEdge);
 
   CatchEdge = function(){};
@@ -807,7 +889,10 @@ Draw.loadPlugin(function(ui) {
   CatchEdge.prototype.create = function(label){
     if (label == null ) label = this.type;
     var cell = createEdge(this, CatchEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');    
+    // cell.setAttribute('label', '%error_equals%');
+    cell.setAttribute('placeholders', 1);
     cell.setAttribute('error_equals', '');
+    cell.setAttribute('result_path', '');
     cell.setAttribute('weight', '1');
     return cell;
   };
@@ -826,6 +911,7 @@ Draw.loadPlugin(function(ui) {
       var img = awssfUtils.createHandlerImage.call(this, CatchEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
     return img;
   };
+  CatchEdge.prototype.handler = awssfEdgeHandler;
   registCodec(CatchEdge);
 
   ChoiceEdge = function(){};
@@ -833,9 +919,9 @@ Draw.loadPlugin(function(ui) {
   ChoiceEdge.prototype.create = function(label){
     if (label == null ) label = this.type;
     var cell = createEdge(this, ChoiceEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');     
-    cell.setAttribute('label', '%condition%');
+    // cell.setAttribute('label', '%condition%');
     cell.setAttribute('placeholders', 1);  
-    cell.setAttribute('condition', '$.dummy == 1');
+    cell.setAttribute('condition', '$.xyz == 1');
     cell.setAttribute('weight', '1');    
     return cell;
   };
@@ -916,6 +1002,7 @@ Draw.loadPlugin(function(ui) {
     var img = awssfUtils.createHandlerImage.call(this, ChoiceEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACWUlEQVRIS7WVXW/SUBjH/12AGZDSDkkwQ40mytCxmC1z6Fx82RUXiiYz8WvMO/0AXrqPoYkandF4t+iWuSXTRMkcu1OUKbFAAWFCy1ZzaoCe9oDUl3PV5pzzO8/L/3keTtM0DV1WsdpAVlaRLSoICi4ERScEj6PbldYex4LX1F08fyNjM7MN8m1ee5x9GAq5ER8TQb47LQs8ldnG49U8E8p65ErMj0jIzeRT8EerObz9UO3JZeOhWNiL+OiA5V4LTiy+tyTZBjcvXJ8KWDzQ4SSuc/NbllCMHtmLWJhHwOdEHwc0djSkpToWkkVk8nXKEBL72cQglQMdzgrH9Iiggwnk5XoJXwp1/f90mMf3Hzu4vyxBKqvUAycPe3A1to9Wy+0Hn1BX24oM+ftxbTKAQkXF3cVvUBrtvYtRARNhL1Y2y3ixXrJYf3PmQBsuV1Rt7skWdejcsA9nhngsvi9hOVW2lYfZy4OtOuA2Plc1cyITp/w4cciDZ2t5vPtoTz3GxHILSVkzu3dp3I8ogb+2Dz8/7MOFqKB7y7R8MsJj6rgPSxvWsLgcnL6XK6tMryjLWTHvltCJY15Mj4hIpit4ulaw5IOKOZGiWS3khlGKr1JlpKVaS4o1ZRcPV3IWrfc7OdyaOUhLsVPZn43wGD/qBe92/LaICJGpc1Khd+YzlNZt6Q8AsfpGImStUAL6b72laeWfdkWj/IweM/s5ecTYDjqFiISC9JKe+nkT8msSFfRQsR4hUAKMjw3Ym0RmK8kM/SoryMoKgqIL+0XX381Qu0rpeYb+KzDh/AQ2ZmDL5ziOTgAAAABJRU5ErkJggg==');
     return img;
   };
+  ChoiceEdge.prototype.handler = awssfEdgeHandler;
   registCodec(ChoiceEdge);
 
   DefaultEdge = function DefaultEdge(){};
@@ -939,6 +1026,7 @@ Draw.loadPlugin(function(ui) {
     var img = awssfUtils.createHandlerImage.call(this, DefaultEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAYCAYAAAARfGZ1AAABsklEQVRIS9WVO0sDQRDH/9ek0YAQsEgQFCRpxCaKmuoOQRtN7aOxEVtBP0B8gCARrESwsdI+WoggHkGDoH6ABPGJdhYaEY3Fyma53L5yXoIRHLjmduY3s/PYMQghBB5SfAKeC+wLRdkXDHtZuGeGDl4qArk14NYGSm8qKNAMtJtAYg4IBKs7UuAUaKf0UBlDnZgp5kgnApxCC/v+rsxrdY0BiXnVrgKnER9qFPy6GkqrNyjDaY53Rt1UhHsAaxFoauXQBPgsAndZ4HQV+HoX3dIUTeyJNSjD5XQ48IcckF1mkJYOoHsS6BwGro9YXWSJjrAaOFKGb5tiAXVwx8BaAtoGgFwauDpQo5+yOfjrIyG7SVHJCx5LAv2zQD4DnK2r0Y9n3Dkwbo4JkQvpBfc6o674whoXm4RcbvmPPNIHWAvA/YlbD946Pg3EZ9ifmiP/KS1C5LXmfHAFiPSyqOlsyCLk3G+3+GlF2utCt3j1uTxEHy+s/c431CGiN9D2uTyhfkee16s6oVSpYW+LE0G9ryLffvxt/u49d7w2bBPJxazs0DwQiv3CDq2nW3Q22gX9L+Df4kMPyOkzB4MAAAAASUVORK5CYII=');
     return img;
   };
+  // DefaultEdge.prototype.handler = awssfEdgeHandler;
   registCodec(DefaultEdge);
 
 	// Avoids having to bind all functions to "this"
@@ -980,7 +1068,7 @@ Draw.loadPlugin(function(ui) {
   origGraphCreateHander = ui.editor.graph.createHandler;
   ui.editor.graph.createHandler = function(state)
   {
-    if (state != null && this.model.isVertex(state.cell) && awssfUtils.isAWSsf(state.cell) && state.cell.awssf.handler)
+    if (state != null && awssfUtils.isAWSsf(state.cell) && state.cell.awssf.handler)
     {
       return new state.cell.awssf.handler(state);
     }
@@ -1142,6 +1230,22 @@ Draw.loadPlugin(function(ui) {
             datalist.appendChild(opt);
           };
         });
+        div.appendChild(datalist);
+      }
+      else if (nodeName == 'label' && (awssfUtils.isChoice(cell) || awssfUtils.isRetry(cell) || awssfUtils.isCatch(cell))){
+        var input = addText(count, nodeName, nodeValue);
+        count++;
+        input.setAttribute("list", "candidates");
+        var datalist = document.createElement('datalist');
+        datalist.id = "candidates";
+        var candidates = [];
+        if (attrs["error_equals"]) candidates.push("%error_equals%");
+        if (attrs["condition"]) candidates.push("%condition%");
+        for (var j in candidates){
+          var opt = document.createElement('option');
+          opt.value = candidates[j];
+          datalist.appendChild(opt);
+        };
         div.appendChild(datalist);
       }
       else if (nodeName == 'error_equals'){
@@ -1326,7 +1430,7 @@ Draw.loadPlugin(function(ui) {
 		if (cell != null)
 		{
 			var dlg = new EditDataDialog(ui, cell);
-			ui.showDialog(dlg.container, 500, 320, true, false);
+			ui.showDialog(dlg.container, 600, 320, true, false);
       dlg.container.parentNode.style.resize = 'both';
 			dlg.init();
 		}
@@ -1337,7 +1441,8 @@ Draw.loadPlugin(function(ui) {
     var checklist = {
       START_EXIST: [false, 'start MUST exist'],
       END_EXIST: [false, 'end MUST exist'],
-      UNIQ_NAME: [true, {}, 'name MUST be unique.']
+      UNIQ_NAME: [true, {}, 'name MUST be unique.'],
+      NAME_LENGTH: [true, [], 'name MUST BE less than or equal to 128 unicode characters.']
     };
     var model = ui.editor.graph.getModel();
     for(var i in model.cells){
@@ -1351,6 +1456,10 @@ Draw.loadPlugin(function(ui) {
         }else{
           checklist.UNIQ_NAME[1][label] = 1;
         }
+        if (label.length > 128){
+          checklist.NAME_LENGTH[0] = false;
+          checklist.NAME_LENGTH[1].push(label);
+        }
       }
       if (cell.value != null){
         if (awssfUtils.isStart(cell)){
@@ -1359,7 +1468,16 @@ Draw.loadPlugin(function(ui) {
         if (awssfUtils.isEnd(cell)){
           checklist.END_EXIST[0] = true;
         }
-     }
+      }
+      if (cell.awssf.validate){
+        var res = cell.awssf.validate(cell);
+        if (res.length > 0){
+          checklist[label] = [false, [], res.join("\n")];
+          ui.editor.graph.setCellWarning(cell, res.join("\n"));
+        }else{
+          ui.editor.graph.setCellWarning(cell, null);
+        }
+      }
     }
     var msg = [];
     for(var i in checklist){
@@ -1368,7 +1486,7 @@ Draw.loadPlugin(function(ui) {
       }
     }
     if(msg.length > 0)
-      mxUtils.popup(msg.join("\n"), true);
+      mxUtils.alert(msg.join("\n"));
   });
 
   function setupRoot(){
@@ -1504,7 +1622,7 @@ Draw.loadPlugin(function(ui) {
 
 	var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
 	{
-		ui.menus.addMenuItems(menu, ['-', /*'awssfValidate', */ 'awssfExportJSON', 'awssfExport' /*, '-', 'awssfDeploy', 'awssfInvoke'*/]);
+		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', 'awssfExportJSON', 'awssfExport' /*, '-', 'awssfDeploy', 'awssfInvoke'*/]);
 	});
 	
 	// Inserts voice menu before help menu
