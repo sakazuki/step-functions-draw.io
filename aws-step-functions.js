@@ -67,16 +67,96 @@ Draw.loadPlugin(function(ui) {
       return img;
     },
     validateTimestamp: function(val){
-      if (!val) return true;
-      return (val.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/))
+      if (!val) return null;
+      return !!(val.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/))
     },
     validateNumber: function(val){
-      if (!val) return true;
-      return (val.match(/^\d+$/))
+      if (!val) return null;
+      return !!(val.match(/^\d+$/))
     },
     validateJsonPath: function(val){
-      if (!val) return true;
-      return (val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/))
+      if (!val) return null;
+      return !!(val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/))
+    },
+    validateCommonAttributes: function(cell, res){
+      if (!res) res = [];
+      if (awssfUtils.validateJsonPath(cell.getAttribute("input_path")) == false){
+        res.push("input_path MUST use only supported jsonpath");
+      }
+      if (awssfUtils.validateJsonPath(cell.getAttribute("output_path")) == false){
+        res.push("output_path MUST use only supported jsonpath");
+      }
+      if (awssfUtils.validateJsonPath(cell.getAttribute("result_path")) == false){
+        res.push("result_path MUST use only supported jsonpath");
+      }
+      return res;
+    },
+    snakeToCamel: function(p){
+      p = p.charAt(0).toLowerCase() + p.slice(1);
+      return p.replace(/_./g, function(s) { return s.charAt(1).toUpperCase();});
+    },
+    camelToSnake: function(p){
+      p = awssfUtils.snakeToCamel(p);
+      return p.replace(/([A-Z])/g, function(s) { return '_' + s.charAt(0).toLowerCase();});
+    },
+    ops: {
+      "==": "Equals",
+      "<": "LessThan",
+      ">": "GreaterThan",
+      "<=": "LessThanEquals",
+      ">=": "GreatherThanEquals"
+    },
+    parseJSEPObject: function (obj, res){
+      if (res == null)
+        res = [];
+      if (obj.type == 'MemberExpression'){
+        res.unshift(obj.property.name);
+        return this.parseJSEPObject(obj.object, res);
+      }
+      else if (obj.type == 'Identifier'){
+        res.unshift(obj.name);
+        return res.join(".");      
+      }
+    },
+    parseJSEPValue: function (obj){
+      return obj.value;
+    },
+    parseJSEPExpr: function (obj, res){
+      if (res == null)
+        res = {};
+      if (obj.operator == '&&'){
+        Object.assign(res, {And: [this.parseJSEPExpr(obj.left), this.parseJSEPExpr(obj.right)]});
+      }
+      else if (obj.operator == '||'){
+        Object.assign(res, {Or: [this.parseJSEPExpr(obj.left), this.parseJSEPExpr(obj.right)]});
+      }
+      else if (obj.operator == '!'){
+        Object.assign(res, {Not: this.parseJSEPExpr(obj.argument)});
+      }
+      else if (this.ops[obj.operator]){
+        var vartype;
+        var varname = this.parseJSEPObject(obj.left);
+        var val = this.parseJSEPValue(obj.right);
+        if (typeof(val) == "number") {
+          vartype = "Numeric";
+        }
+        else if (typeof(val) == "string"){
+          if (val.match(/^["'][\d\-]+T[\d:]+Z["']$/)){
+            vartype = "Timestamp";
+          } else {
+            vartype = "String";
+          }
+        }
+        else if (typeof(val) == "boolean"){
+          vartype = "Boolean";
+        }
+        var tmp= {
+          Variable: varname
+        };
+        tmp[vartype + this.ops[obj.operator]] = val;
+        Object.assign(res, tmp);        
+      }
+      return res;
     }
   }
 
@@ -280,6 +360,9 @@ Draw.loadPlugin(function(ui) {
     }
     return NextEdge.prototype.create();
   }
+  PassState.prototype.validate = function(cell, res){
+    return awssfUtils.validateCommonAttributes(cell, res);
+  }
   PassState.prototype.toJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
@@ -340,6 +423,23 @@ Draw.loadPlugin(function(ui) {
     }  
     return NextEdge.prototype.create();
   }
+  TaskState.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (!cell.getAttribute("resource").match(/^arn:aws:\w*:\w+:\d{12}:\w+:\w+/)){
+      res.push("resource MUST be a URI that uniquely identifies the specific task to execute");
+    }
+    if (awssfUtils.validateNumber(cell.getAttribute("timeout_seconds")) == false){
+      res.push("timeout_seconds MUST be number");
+    }
+    if (awssfUtils.validateNumber(cell.getAttribute("heartbeat_seconds")) == false){
+      res.push("heartbeat_seconds MUST be number");
+    }else{
+      if (Number(cell.getAttribute("heartbeat_seconds")) >= Number(cell.getAttribute("timeout_seconds"))){
+        res.push("heartbeat_seconds MUST be smaller than timeout_seconds")
+      }
+    }
+    return awssfUtils.validateCommonAttributes(cell, res);
+  };
   TaskState.prototype.toJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
@@ -414,6 +514,16 @@ Draw.loadPlugin(function(ui) {
   ChoiceState.prototype.create_default_edge = function(){
     return ChoiceEdge.prototype.create();
   }
+  ChoiceState.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (awssfUtils.validateJsonPath(cell.getAttribute("input_path")) == false){
+      res.push("input_path MUST use only supported jsonpath");
+    }
+    if (awssfUtils.validateJsonPath(cell.getAttribute("output_path")) == false){
+      res.push("output_path MUST use only supported jsonpath");
+    }
+    return res;
+  };
   ChoiceState.prototype.toJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
@@ -476,17 +586,20 @@ Draw.loadPlugin(function(ui) {
   };
   WaitState.prototype.validate = function(cell, res){
     if (!res) res = [];
-    if (!awssfUtils.validateTimestamp(cell.getAttribute("timestamp"))){
-      res.push("timestamp must be valid formated");
+    if (awssfUtils.validateNumber(cell.getAttribute("seconds")) == false){
+      res.push("seconds MUST be number");
     }
-    if (!awssfUtils.validateNumber(cell.getAttribute("seconds"))){
-      res.push("seconds must be number");
+    if (awssfUtils.validateTimestamp(cell.getAttribute("timestamp")) == false){
+      res.push("timestamp MUST be valid formated");
     }
-    if (!awssfUtils.validateJsonPath(cell.getAttribute("seconds_path"))){
-      res.push("second_path must use only supported jsonpath");
+    if (awssfUtils.validateJsonPath(cell.getAttribute("seconds_path")) == false){
+      res.push("second_path MUST use only supported jsonpath");
     }
-    if (!awssfUtils.validateJsonPath(cell.getAttribute("timestamp_path"))){
-      res.push("timestamp_path must use only supported jsonpath");
+    if (awssfUtils.validateJsonPath(cell.getAttribute("timestamp_path")) == false){
+      res.push("timestamp_path MUST use only supported jsonpath");
+    }
+    if (!(cell.getAttribute("seconds") || cell.getAttribute("timestamp") || cell.getAttribute("seconds_path") || cell.getAttribute("timestamp_path"))){
+      res.push('A Wait state MUST contain exactly one of ”Seconds”, “SecondsPath”, “Timestamp”, or “TimestampPath”');
     }
     return res;
   };
@@ -505,7 +618,7 @@ Draw.loadPlugin(function(ui) {
 
     var options = this.cst.DURATION_FORMAT;
     for(var j in options){
-      var key = options[j].toLowerCase();
+      var key = awssfUtils.camelToSnake(options[j]);
       if (cell.getAttribute(key)){
         if (cell.getAttribute(key).match(/^\d+/)){
           data[label][options[j]] = Number(cell.getAttribute(key));
@@ -536,11 +649,11 @@ Draw.loadPlugin(function(ui) {
       var td = document.createElement('td');
       var select = document.createElement('select');
       var options = this.cst.DURATION_FORMAT;
-      for(var j=0; j < options.length; j++){
+      for(var j in options){
         var option = document.createElement('option');
         mxUtils.writeln(option, options[j]);
-        option.setAttribute('value', options[j].toLowerCase());
-        if (attrName == options[j].toLowerCase()){
+        option.setAttribute('value', awssfUtils.camelToSnake(options[j]));
+        if (attrName == awssfUtils.camelToSnake(options[j])){
           option.setAttribute('selected', true);
         }
         select.appendChild(option);
@@ -576,8 +689,8 @@ Draw.loadPlugin(function(ui) {
     else
     {
       if (typeof(name) == 'object'){
-        for (var i = 0; i < this.cst.DURATION_FORMAT.length; i++){
-          var n = this.cst.DURATION_FORMAT[i].toLowerCase();
+        for (var i in this.cst.DURATION_FORMAT){
+          var n = awssfUtils.camelToSnake(this.cst.DURATION_FORMAT[i]);
           if ( n == name.value ){
             value.setAttribute(name.value, text.value);
           }else{
@@ -686,6 +799,9 @@ Draw.loadPlugin(function(ui) {
     }
     return NextEdge.prototype.create();
   }
+  ParallelState.prototype.validate = function(cell, res){
+    return awssfUtils.validateCommonAttributes(cell, res);
+  };
   ParallelState.prototype.toJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
@@ -864,6 +980,19 @@ Draw.loadPlugin(function(ui) {
     cell.setAttribute('weight', 1);
     return cell;
   };
+  RetryEdge.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (awssfUtils.validateNumber(cell.getAttribute("interval_seconds")) == false){
+      res.push("interval_seconds MUST be a positive integer");
+    }
+    if (awssfUtils.validateNumber(cell.getAttribute("max_attempts")) == false){
+      res.push("max_attempts MUST be greater than or equal to 0");
+    }
+    if ((awssfUtils.validateNumber(cell.getAttribute("backoff_rate")) == false) && (Number(cell.getAttribute("backoff_rate")) >= 1)){
+      res.push("backoff_rate MUST be greater than or equal to 1.0");
+    }
+    return res;
+  };
   RetryEdge.prototype.toJSON = function(cell, cells){
     if (cell.target != null){
       var data = {
@@ -896,6 +1025,13 @@ Draw.loadPlugin(function(ui) {
     cell.setAttribute('weight', '1');
     return cell;
   };
+  CatchEdge.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (awssfUtils.validateJsonPath(cell.getAttribute("result_path")) == false){
+      res.push("result_path MUST use only supported jsonpath");
+    }
+    return res;
+  };
   CatchEdge.prototype.toJSON = function(cell, cells){
     if (cell.target != null){
       var data = {
@@ -925,72 +1061,27 @@ Draw.loadPlugin(function(ui) {
     cell.setAttribute('weight', '1');    
     return cell;
   };
+  ChoiceEdge.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    var condition = cell.getAttribute("condition");
+    if (condition){
+      try{
+        var tree = jsep(condition);
+      }catch(e){
+        res.push("invalid jsep.");
+      }
+    }else{
+      res.push("condition MUST be defined")
+    }
+    return res;
+  };
   ChoiceEdge.prototype.toJSON = function(cell, cells){
-    var ops = {
-      "==": "Equals",
-      "<": "LessThan",
-      ">": "GreaterThan",
-      "<=": "LessThanEquals",
-      ">=": "GreatherThanEquals"
-    };
-    function parseJSEPObject(obj, res){
-      if (res == null)
-        res = [];
-      if (obj.type == 'MemberExpression'){
-        res.unshift(obj.property.name);
-        return parseJSEPObject(obj.object, res);
-      }
-      else if (obj.type == 'Identifier'){
-        res.unshift(obj.name);
-        return res.join(".");      
-      }
-    }
-    function parseJSEValue(obj){
-      return obj.value;
-    }
-    function parseJSEPExpr(obj, res){
-      if (res == null)
-        res = {};
-      if (obj.operator == '&&'){
-        Object.assign(res, {And: [parseJSEPExpr(obj.left), parseJSEPExpr(obj.right)]});
-      }
-      else if (obj.operator == '||'){
-        Object.assign(res, {Or: [parseJSEPExpr(obj.left), parseJSEPExpr(obj.right)]});
-      }
-      else if (obj.operator == '!'){
-        Object.assign(res, {Not: parseJSEPExpr(obj.argument)});
-      }
-      else if (ops[obj.operator]){
-        var vartype;
-        var varname = parseJSEPObject(obj.left);
-        var val = parseJSEValue(obj.right);
-        if (typeof(val) == "number") {
-          vartype = "Numeric";
-        }
-        else if (typeof(val) == "string"){
-          if (val.match(/^["'][\d\-]+T[\d:]+Z["']$/)){
-            vartype = "Timestamp";
-          } else {
-            vartype = "String";
-          }
-        }
-        else if (typeof(val) == "boolean"){
-          vartype = "Boolean";
-        }
-        var tmp= {
-          Variable: varname
-        };
-        tmp[vartype + ops[obj.operator]] = val;
-        Object.assign(res, tmp);        
-      }
-      return res;
-    }
     if (cell.target != null){
       var condition = cell.getAttribute("condition");
       var data;
       if (condition != null){
         var tree = jsep(condition);
-        data = parseJSEPExpr(tree);
+        data = awssfUtils.parseJSEPExpr(tree);
       }
       data.Next = cells[cell.target.id].getAttribute("label");
       return data;
@@ -1217,7 +1308,7 @@ Draw.loadPlugin(function(ui) {
         mxUtils.write(span, nodeValue);
         form.addField('type:', span);
       }
-      else if (AWS && (nodeName == 'resource')){
+      else if ((typeof(AWS) === "object") && (nodeName == 'resource')){
         var input = addText(count, nodeName, nodeValue);
         count++;
         input.setAttribute("list", "resources");
@@ -1447,6 +1538,15 @@ Draw.loadPlugin(function(ui) {
     var model = ui.editor.graph.getModel();
     for(var i in model.cells){
       var cell = model.cells[i];
+      if (cell.awssf && cell.awssf.validate){
+        var res = cell.awssf.validate(cell);
+        if (res.length > 0){
+          checklist[label] = [false, [], res.join("\n")];
+          ui.editor.graph.setCellWarning(cell, res.join("\n"));
+        }else{
+          ui.editor.graph.setCellWarning(cell, null);
+        }
+      }
       if (!cell.isVertex()) continue;
       var label = cell.getAttribute("label");
       if (label != null){
@@ -1467,15 +1567,6 @@ Draw.loadPlugin(function(ui) {
         }
         if (awssfUtils.isEnd(cell)){
           checklist.END_EXIST[0] = true;
-        }
-      }
-      if (cell.awssf.validate){
-        var res = cell.awssf.validate(cell);
-        if (res.length > 0){
-          checklist[label] = [false, [], res.join("\n")];
-          ui.editor.graph.setCellWarning(cell, res.join("\n"));
-        }else{
-          ui.editor.graph.setCellWarning(cell, null);
         }
       }
     }
