@@ -1,4 +1,5 @@
-mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
+mxscript("https://cdn.rawgit.com/soney/jsep/b8baab7b/build/jsep.min.js");
+mxscript("https://cdn.rawgit.com/nodeca/js-yaml/9c1894e2/dist/js-yaml.min.js");
 mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.9.0.min.js");
 // mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
 //mxscript("https://localhost:8000/js/aws-sdk-2.9.0.js");
@@ -78,7 +79,7 @@ Draw.loadPlugin(function(ui) {
       if (!val) return null;
       return !!(val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/))
     },
-    validateCommonAttributes: function(cell, res){
+    validateCommonAttributes: function(cell, res, check_result_path){
       if (!res) res = [];
       if (awssfUtils.validateJsonPath(cell.getAttribute("input_path")) == false){
         res.push("input_path MUST use only supported jsonpath");
@@ -86,7 +87,7 @@ Draw.loadPlugin(function(ui) {
       if (awssfUtils.validateJsonPath(cell.getAttribute("output_path")) == false){
         res.push("output_path MUST use only supported jsonpath");
       }
-      if (awssfUtils.validateJsonPath(cell.getAttribute("result_path")) == false){
+      if (check_result_path && (awssfUtils.validateJsonPath(cell.getAttribute("result_path")) == false)){
         res.push("result_path MUST use only supported jsonpath");
       }
       return res;
@@ -361,7 +362,7 @@ Draw.loadPlugin(function(ui) {
     return NextEdge.prototype.create();
   }
   PassState.prototype.validate = function(cell, res){
-    return awssfUtils.validateCommonAttributes(cell, res);
+    return awssfUtils.validateCommonAttributes(cell, res, true);
   }
   PassState.prototype.toJSON = function(cell, cells){
     var data = {};
@@ -380,16 +381,16 @@ Draw.loadPlugin(function(ui) {
       data[label].ResultPath = cell.getAttribute("result_path");
     if (cell.getAttribute("result"))
       data[label].Result = cell.getAttribute("result");
-    var exist_outgoing_edge = false;
+    var exist_next_edge = false;
     for(var i in cell.edges){
       var edge = cell.edges[i];
       if (edge.source != cell) continue;
-      exist_outgoing_edge = true;
-      if (edge.awssf.toJSON){
+      if (awssfUtils.isNext(edge)){
+        exist_next_edge = true;
         Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
       }
     }
-    if (exist_outgoing_edge == false || data[label].Next == 'End'){
+    if (exist_next_edge == false || data[label].Next == 'End'){
       delete data[label]['Next'];
       data[label]["End"] = true;
     }
@@ -438,7 +439,7 @@ Draw.loadPlugin(function(ui) {
         res.push("heartbeat_seconds MUST be smaller than timeout_seconds")
       }
     }
-    return awssfUtils.validateCommonAttributes(cell, res);
+    return awssfUtils.validateCommonAttributes(cell, res, true);
   };
   TaskState.prototype.toJSON = function(cell, cells){
     var data = {};
@@ -460,30 +461,32 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("heartbeat_seconds"))
       data[label].HeartbeatSeconds = Number(cell.getAttribute("heartbeat_seconds"));
 
-    var exist_outgoing_edge = false;
-    var sorted_edges = cell.edges.sort(function(a, b){
-      if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
-      if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
-      return 0;
-    });    
-    for(var i in sorted_edges){
-      var edge = sorted_edges[i];
-      if (edge.source != cell) continue;
-      exist_outgoing_edge = true;
-      if (edge.awssf && edge.awssf.toJSON){
-        if (awssfUtils.isRetry(edge)){
-          if (!data[label]["Retry"]) data[label]["Retry"] = [];
-          data[label]["Retry"].push(edge.awssf.toJSON(edge, cells));
-        }
-        else if (awssfUtils.isCatch(edge)){
-          if (!data[label]["Catch"]) data[label]["Catch"] = [];
-          data[label]["Catch"].push(edge.awssf.toJSON(edge, cells));
-        }else{
-          Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
+    var exist_next_edge = false;
+    if (cell.edges){
+      var sorted_edges = cell.edges.sort(function(a, b){
+        if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
+        if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
+        return 0;
+      });    
+      for(var i in sorted_edges){
+        var edge = sorted_edges[i];
+        if (edge.source != cell) continue;
+        if (edge.awssf && edge.awssf.toJSON){
+          if (awssfUtils.isRetry(edge)){
+            if (!data[label]["Retry"]) data[label]["Retry"] = [];
+            data[label]["Retry"].push(edge.awssf.toJSON(edge, cells));
+          }
+          else if (awssfUtils.isCatch(edge)){
+            if (!data[label]["Catch"]) data[label]["Catch"] = [];
+            data[label]["Catch"].push(edge.awssf.toJSON(edge, cells));
+          }else if (awssfUtils.isNext(edge)){
+            exist_next_edge = true;
+            Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
+          }
         }
       }
     }
-    if (exist_outgoing_edge == false || data[label].Next == 'End'){
+    if (exist_next_edge == false || data[label].Next == 'End'){
       delete data[label]['Next'];
       data[label]["End"] = true;
     }
@@ -516,13 +519,11 @@ Draw.loadPlugin(function(ui) {
   }
   ChoiceState.prototype.validate = function(cell, res){
     if (!res) res = [];
-    if (awssfUtils.validateJsonPath(cell.getAttribute("input_path")) == false){
-      res.push("input_path MUST use only supported jsonpath");
+    if (!cell.edges ||
+      (cell.edges.filter(function(v){ return (v.source == cell) && awssfUtils.isChoice(v)}).length == 0)){
+      res.push("A Choice state MUST have more than one choice edge")
     }
-    if (awssfUtils.validateJsonPath(cell.getAttribute("output_path")) == false){
-      res.push("output_path MUST use only supported jsonpath");
-    }
-    return res;
+    return awssfUtils.validateCommonAttributes(cell, res, false);
   };
   ChoiceState.prototype.toJSON = function(cell, cells){
     var data = {};
@@ -536,21 +537,21 @@ Draw.loadPlugin(function(ui) {
       data[label].InputPath = cell.getAttribute("input_path");
     if (cell.getAttribute("output_path"))
       data[label].OutputPath = cell.getAttribute("output_path");
-
-    var sorted_edges = cell.edges.sort(function(a, b){
-      if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
-      if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
-      return 0;
-    });
-    for(var i in sorted_edges){
-      var edge = sorted_edges[i];
-      if (edge.source != cell) continue;
-      if (awssfUtils.isChoice(edge)){
-        if (edge.awssf.toJSON)
+    if (cell.edges){
+      var sorted_edges = cell.edges.sort(function(a, b){
+        if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
+        if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
+        return 0;
+      });
+      for(var i in sorted_edges){
+        var edge = sorted_edges[i];
+        if (edge.source != cell) continue;
+        if (awssfUtils.isChoice(edge)){
           data[label].Choices.push(edge.awssf.toJSON(edge, cells))
-      }
-      else if (awssfUtils.isDefault(edge)){
-        data[label].Default = cells[edge.target.id].getAttribute("label");
+        }
+        else if (awssfUtils.isDefault(edge)){
+          Object.assign(data[label], edge.awssf.toJSON(edge, cells));
+        }
       }
     }
     return data;
@@ -601,7 +602,7 @@ Draw.loadPlugin(function(ui) {
     if (!(cell.getAttribute("seconds") || cell.getAttribute("timestamp") || cell.getAttribute("seconds_path") || cell.getAttribute("timestamp_path"))){
       res.push('A Wait state MUST contain exactly one of ”Seconds”, “SecondsPath”, “Timestamp”, or “TimestampPath”');
     }
-    return res;
+    return awssfUtils.validateCommonAttributes(cell, res, false);
   };
   WaitState.prototype.toJSON = function(cell, cells){
     var data = {};
@@ -628,16 +629,16 @@ Draw.loadPlugin(function(ui) {
         break;
       }
     }
-    var exist_outgoing_edge = false;
+    var exist_next_edge = false;
     for(var i in cell.edges){
       var edge = cell.edges[i];
       if (edge.source != cell) continue;
-      exist_outgoing_edge = true;
-      if (edge.awssf.toJSON){
+      if (awssfUtils.isNext(edge)){
+        exist_next_edge = true;
         Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
       }
     }
-    if (exist_outgoing_edge == false || data[label].Next == 'End'){
+    if (exist_next_edge == false || data[label].Next == 'End'){
       delete data[label]['Next'];
       data[label]["End"] = true;
     }
@@ -722,6 +723,14 @@ Draw.loadPlugin(function(ui) {
     var cell = createState(this, SucceedState, 'shape=mxgraph.flowchart.terminator;html=1;whiteSpace=wrap;gradientColor=none;');
     return cell;
   };
+  SucceedState.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (cell.edges &&
+      (cell.edges.filter(function(v){ return (v.source == cell) && awssfUtils.isAWSsf(v)}).length > 0)){
+      res.push("A Succeed state MUST have no outgoing edge")
+    }
+    return awssfUtils.validateCommonAttributes(cell, res, false);
+  };  
   SucceedState.prototype.toJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
@@ -748,6 +757,20 @@ Draw.loadPlugin(function(ui) {
     cell.value.removeAttribute('input_path');
     cell.value.removeAttribute('output_path');  
     return cell;  
+  };
+  FailState.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (cell.edges &&
+      (cell.edges.filter(function(v){ return (v.source == cell) && awssfUtils.isAWSsf(v)}).length > 0)){
+      res.push("A Fail state MUST have no outgoing edge")
+    }
+    if (!cell.getAttribute("error")){
+      res.push("error MUST have a value");
+    }
+    if (!cell.getAttribute("cause")){
+      res.push("cause MUST have a value");
+    }
+    return awssfUtils.validateCommonAttributes(cell, res, false);
   };
   FailState.prototype.toJSON = function(cell, cells){
     var data = {};
@@ -800,7 +823,7 @@ Draw.loadPlugin(function(ui) {
     return NextEdge.prototype.create();
   }
   ParallelState.prototype.validate = function(cell, res){
-    return awssfUtils.validateCommonAttributes(cell, res);
+    return awssfUtils.validateCommonAttributes(cell, res, true);
   };
   ParallelState.prototype.toJSON = function(cell, cells){
     var data = {};
@@ -863,30 +886,32 @@ Draw.loadPlugin(function(ui) {
         States: states
       });
     }
-    var exist_outgoing_edge = false;
-    var sorted_edges = cell.edges.sort(function(a, b){
-      if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
-      if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
-      return 0;
-    });
-    for(var i in sorted_edges){
-      var edge = sorted_edges[i];
-      if (edge.source != cell) continue;
-      exist_outgoing_edge = true;
-      if (edge.awssf.toJSON){
-        if (awssfUtils.isRetry(edge)){
-          if (!data[label]["Retry"]) data[label]["Retry"] = [];
-          data[label]["Retry"].push(edge.awssf.toJSON(edge, cells));
-        }
-        else if (awssfUtils.isCatch(edge)){
-          if (!data[label]["Catch"]) data[label]["Catch"] = [];
-          data[label]["Catch"].push(edge.awssf.toJSON(edge, cells));
-        }else{
-          Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
+    var exist_next_edge = false;
+    if (cell.edges){
+      var sorted_edges = cell.edges.sort(function(a, b){
+        if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
+        if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
+        return 0;
+      });
+      for(var i in sorted_edges){
+        var edge = sorted_edges[i];
+        if (edge.source != cell) continue;
+        if (edge.awssf.toJSON){
+          if (awssfUtils.isRetry(edge)){
+            if (!data[label]["Retry"]) data[label]["Retry"] = [];
+            data[label]["Retry"].push(edge.awssf.toJSON(edge, cells));
+          }
+          else if (awssfUtils.isCatch(edge)){
+            if (!data[label]["Catch"]) data[label]["Catch"] = [];
+            data[label]["Catch"].push(edge.awssf.toJSON(edge, cells));
+          }else if (awssfUtils.isNext(edge)){
+            exist_next_edge = true;
+            Object.assign(data[label], edge.awssf.toJSON(edge, cells));
+          }
         }
       }
     }
-    if (exist_outgoing_edge == false || data[label].Next == 'End'){
+    if (exist_next_edge == false || data[label].Next == 'End'){
       delete data[label]['Next'];
       data[label]["End"] = true;
     }
@@ -925,6 +950,13 @@ Draw.loadPlugin(function(ui) {
     var cell = createEdge(this, StartAtEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');
     return cell;
   };
+  StartAtEdge.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (!(cell.source && cell.target)){
+      res.push("edge MUST be connected");
+    }
+    return res;
+  };
   StartAtEdge.prototype.toJSON = function(cell, cells){
     if (cell.target != null){
       var data = {
@@ -935,7 +967,7 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
-  // StartAtEdge.prototype.handler = awssfStateHandler;
+  StartAtEdge.prototype.handler = awssfEdgeHandler;
   registCodec(StartAtEdge);
 
 
@@ -945,6 +977,13 @@ Draw.loadPlugin(function(ui) {
     if (label == null ) label = this.type;  
     var cell = createEdge(this, NextEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');
     return cell;
+  };
+  NextEdge.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (!(cell.source && cell.target)){
+      res.push("edge MUST be connected");
+    }
+    return res;
   };
   NextEdge.prototype.toJSON = function(cell, cells){
     if (cell.target != null){
@@ -960,7 +999,7 @@ Draw.loadPlugin(function(ui) {
     var img = awssfUtils.createHandlerImage.call(this, NextEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAAB30lEQVRIS72VsU4CQRRFj52ddCZU0tpo4h/YYKkUNhRCYgyJhfIFakNjoR9goiiJiY12kBBsaSDRL9A/EBtojJjLZNhlnIVdjU612Z097819d96bGw6HQ/5ozcWBv77C8zM8PcHqKqyswNLS7Iwi4b0elMvw8AB6dlcqBZubcHYGevYtL1zAYtEP9QW5vDSB3PUNXihAtTr7yO6OgwM4P598OwFXxltbycH2j/v7yROM4dI1kwmkWF+H62v4/ASd5vExCHpxAdvbsL8PNzfBe2n/8hLUYAx35bDwdBqaTchmZ8O1Y2cHrq7M3jFcUd/fA4CFDwagAKencHxsvkdlrm/ivL2F4PKxJAkvC2+1YG0NFhZgbw/q9elwMSSN7sEoc18hLbzRgG4XKhXodCCXM972ae4WdgTXcU9O/JkLvrsLtZpxkuy2uDgdfnRkJIyVueDLy3B3Z+Rpt2Fj47tbvJlP09xmrh9LJSPPxwfMz0fDJzS3Vfa5JQzXPt3efB76fT9cJ7O9aKbPXbjkub017nIvUaTPFU32CWeftBEoa0lsu+T/9Bab5U+7orVf+LSR/VxB4kgkKdRLYvVzG1k1ODw0k8gXRFABdakSTSK3kCqS5qedoZqjv5qhSZ3i2/8FknYly43Hp8kAAAAASUVORK5CYII=');
     return img;
   };
-  // NextEdge.prototype.handler = awssfEdgeHandler;
+  NextEdge.prototype.handler = awssfEdgeHandler;
   registCodec(NextEdge);
 
 
@@ -982,6 +1021,12 @@ Draw.loadPlugin(function(ui) {
   };
   RetryEdge.prototype.validate = function(cell, res){
     if (!res) res = [];
+    if (!(cell.source && cell.target)){
+      res.push("edge MUST be connected");
+    }
+    if ((cell.source && cell.target) && (cell.source.id != cell.target.id)){
+      res.push("retry edge target MUST be self");
+    }
     if (awssfUtils.validateNumber(cell.getAttribute("interval_seconds")) == false){
       res.push("interval_seconds MUST be a positive integer");
     }
@@ -994,9 +1039,11 @@ Draw.loadPlugin(function(ui) {
     return res;
   };
   RetryEdge.prototype.toJSON = function(cell, cells){
+    var errors = cell.getAttribute("error_equals");
+    errors = errors ? errors.split(/,\s*/) : [];
     if (cell.target != null){
       var data = {
-        ErrorEquals: [cell.getAttribute("error_equals")],
+        ErrorEquals: errors,
         IntervalSeconds: cell.getAttribute("interval_seconds"),
         MaxAttempts: cell.getAttribute("max_attempts"),
         BackoffRate: cell.getAttribute("backoff_rate")
@@ -1027,15 +1074,20 @@ Draw.loadPlugin(function(ui) {
   };
   CatchEdge.prototype.validate = function(cell, res){
     if (!res) res = [];
+    if (!(cell.source && cell.target)){
+      res.push("edge MUST be connected");
+    }
     if (awssfUtils.validateJsonPath(cell.getAttribute("result_path")) == false){
       res.push("result_path MUST use only supported jsonpath");
     }
     return res;
   };
   CatchEdge.prototype.toJSON = function(cell, cells){
+    var errors = cell.getAttribute("error_equals");
+    errors = errors ? errors.split(/,\s*/) : [];    
     if (cell.target != null){
       var data = {
-        ErrorEquals: [cell.getAttribute("error_equals")],
+        ErrorEquals: errors,
         Next: cells[cell.target.id].getAttribute("label")
       }
       return data;
@@ -1063,6 +1115,9 @@ Draw.loadPlugin(function(ui) {
   };
   ChoiceEdge.prototype.validate = function(cell, res){
     if (!res) res = [];
+    if (!(cell.source && cell.target)){
+      res.push("edge MUST be connected");
+    }
     var condition = cell.getAttribute("condition");
     if (condition){
       try{
@@ -1103,6 +1158,13 @@ Draw.loadPlugin(function(ui) {
     var cell = createEdge(this, DefaultEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');
     return cell;
   };
+  DefaultEdge.prototype.validate = function(cell, res){
+    if (!res) res = [];
+    if (!(cell.source && cell.target)){
+      res.push("edge MUST be connected");
+    }
+    return res;
+  };
   DefaultEdge.prototype.toJSON = function(cell, cells){
     if (cell.target != null){
       var data = {
@@ -1117,7 +1179,7 @@ Draw.loadPlugin(function(ui) {
     var img = awssfUtils.createHandlerImage.call(this, DefaultEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAYCAYAAAARfGZ1AAABsklEQVRIS9WVO0sDQRDH/9ek0YAQsEgQFCRpxCaKmuoOQRtN7aOxEVtBP0B8gCARrESwsdI+WoggHkGDoH6ABPGJdhYaEY3Fyma53L5yXoIRHLjmduY3s/PYMQghBB5SfAKeC+wLRdkXDHtZuGeGDl4qArk14NYGSm8qKNAMtJtAYg4IBKs7UuAUaKf0UBlDnZgp5kgnApxCC/v+rsxrdY0BiXnVrgKnER9qFPy6GkqrNyjDaY53Rt1UhHsAaxFoauXQBPgsAndZ4HQV+HoX3dIUTeyJNSjD5XQ48IcckF1mkJYOoHsS6BwGro9YXWSJjrAaOFKGb5tiAXVwx8BaAtoGgFwauDpQo5+yOfjrIyG7SVHJCx5LAv2zQD4DnK2r0Y9n3Dkwbo4JkQvpBfc6o674whoXm4RcbvmPPNIHWAvA/YlbD946Pg3EZ9ifmiP/KS1C5LXmfHAFiPSyqOlsyCLk3G+3+GlF2utCt3j1uTxEHy+s/c431CGiN9D2uTyhfkee16s6oVSpYW+LE0G9ryLffvxt/u49d7w2bBPJxazs0DwQiv3CDq2nW3Q22gX9L+Df4kMPyOkzB4MAAAAASUVORK5CYII=');
     return img;
   };
-  // DefaultEdge.prototype.handler = awssfEdgeHandler;
+  DefaultEdge.prototype.handler = awssfEdgeHandler;
   registCodec(DefaultEdge);
 
 	// Avoids having to bind all functions to "this"
@@ -1159,7 +1221,7 @@ Draw.loadPlugin(function(ui) {
   origGraphCreateHander = ui.editor.graph.createHandler;
   ui.editor.graph.createHandler = function(state)
   {
-    if (state != null && awssfUtils.isAWSsf(state.cell) && state.cell.awssf.handler)
+    if (state != null && (this.getSelectionCells().length == 1) && awssfUtils.isAWSsf(state.cell) && state.cell.awssf.handler)
     {
       return new state.cell.awssf.handler(state);
     }
@@ -1508,10 +1570,11 @@ Draw.loadPlugin(function(ui) {
 	mxResources.parse('stepFunctions=StepFunctions');
 	mxResources.parse('awssfValidate=Validate');
 	mxResources.parse('awssfExportJSON=Export JSON');
+	mxResources.parse('awssfExportYAML=Export YAML');
 	mxResources.parse('awssfExport=Export');
 	mxResources.parse('awssfLambda=Lambda');
-  mxResources.parse('awssfDeploy=Deploy');
-  mxResources.parse('awssfInvoke=Invoke');
+  mxResources.parse('awssfDeploy=Deploy(CORS not supported)');
+  mxResources.parse('awssfInvoke=Invoke(CORS not supported)');
 
   //override editData...
 	ui.actions.addAction('editData...', function()
@@ -1633,6 +1696,12 @@ Draw.loadPlugin(function(ui) {
     mxUtils.popup(JSON.stringify(data, null, "  "));
   });
 
+  ui.actions.addAction('awssfExportYAML', function()
+  {
+    var data = getStepFunctionDefinition();
+    mxUtils.popup(jsyaml.dump(data));
+  });
+
   ui.actions.addAction('awssfExport', function()
   {
     var encoder = new mxCodec();
@@ -1688,6 +1757,12 @@ Draw.loadPlugin(function(ui) {
     // });
   }
 
+  function isSupproted(){
+    var sdk_supported = (typeof(AWS) == "object") && (typeof(AWS.StepFunctions) == "object");
+    var cors_supported = false;
+    return sdk_supported && cors_supported;
+  }
+
   ui.actions.addAction('awssfDeploy', function()
   {
     if (!setupAWSconfig()) return;
@@ -1703,17 +1778,17 @@ Draw.loadPlugin(function(ui) {
         else     console.log(data);           // successful response
       });    
     });
-  });
+  }).isEnabled = isSupproted;
 
   ui.actions.addAction('awssfInvoke', function()
   {
     if (!setupAWSconfig()) return;
     var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-  });  
+  }).isEnabled = isSupproted;  
 
 	var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
 	{
-		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', 'awssfExportJSON', 'awssfExport' /*, '-', 'awssfDeploy', 'awssfInvoke'*/]);
+		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport' , '-', 'awssfDeploy', 'awssfInvoke']);
 	});
 	
 	// Inserts voice menu before help menu
