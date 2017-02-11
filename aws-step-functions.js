@@ -1051,9 +1051,9 @@ Draw.loadPlugin(function(ui) {
     if (cell.target != null){
       var data = {
         ErrorEquals: errors,
-        IntervalSeconds: cell.getAttribute("interval_seconds"),
-        MaxAttempts: cell.getAttribute("max_attempts"),
-        BackoffRate: cell.getAttribute("backoff_rate")
+        IntervalSeconds: Number(cell.getAttribute("interval_seconds")),
+        MaxAttempts: Number(cell.getAttribute("max_attempts")),
+        BackoffRate: Number(cell.getAttribute("backoff_rate"))
       }
       return data;
     }else{
