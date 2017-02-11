@@ -317,7 +317,7 @@ Draw.loadPlugin(function(ui) {
     return cell;
   }
 
-  function createAWSconfig(){
+  function createAWSconfig(awsf){
     var cell = new mxCell('AWSconfig', new mxGeometry(0, 0, 70, 46), 'dashed=0;html=1;shape=mxgraph.aws2.non-service_specific.cloud;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;');
     cell.vertex = true;
     cell.value = mxUtils.createXmlDocument().createElement('object');
@@ -326,9 +326,16 @@ Draw.loadPlugin(function(ui) {
     cell.setAttribute('accessKeyId', '');
     cell.setAttribute('secretAccessKey', '');
     cell.setAttribute('region', '');
-    cell.awssf = {handler: awssfStateHandler};
+    cell.awssf = awsf;
     return cell;
   }
+
+  AWSconfig = function(){};
+  AWSconfig.prototype.create = function(){
+    return createAWSconfig(this);
+  }
+  AWSconfig.prototype.handler = awssfStateHandler;
+  registCodec(AWSconfig);
 
   function createState(awssf, state, style){
     var label = state.prototype.type;
@@ -409,8 +416,8 @@ Draw.loadPlugin(function(ui) {
   TaskState = function(){};
   TaskState.prototype.type = 'Task';
   TaskState.prototype.create = function(){
-    var cell = createState(this, TaskState, 'shape=mxgraph.flowchart.predefined_process;whiteSpace=wrap;gradientColor=none;html=1;');
-    cell.setAttribute('resource', 'arn:aws:');
+    var cell = createState(this, TaskState, 'shape=stencil(rZVNb4MwDIZ/DdcqkI2P48S6Y1Wph51TMCMqTVDC2m2/fiEBdUCyAavExa+xH78BjIdTWZIavAAxcgYPP3tBsBeQQ0EZ5EreC56BlEpWQWluCJEJryZMYhMSWUPWGO1CBCXHCkxGNoKf4ErzputAWQmCNm0Wbz30pO5pL5xmnDHVhHImB5kfedWMUKZq0YdphjaPBvPZxSaqFeEMDYiBerO508LLaow/D3NYihl66aF/YV4XYvx1mO3iQ0PBiIT8mazdUk8WWBLPhB2Ww/r3foWz5cc4gc13ZoPhVCmujw2nR5Kd3gR/Z7l1RJ0R7cfuem2tC2K0PojIJP3qpgw3kR+FcYSihzhIEuy7hnaMhtOCC/hl5oJWldlDroOvSbueJok+feYXuPmNLH5tbfvqSu1TV3XoLteWHYOp3X0/P4n/L0Oj8js70jWT56tV8/vSwjc=);whiteSpace=wrap;gradientColor=none;html=1;');
+    cell.setAttribute('resource', '');
     cell.setAttribute('timeout_seconds', 60);
     cell.setAttribute('heartbeat_seconds', '');
     cell.setAttribute('result_path', '');
@@ -508,7 +515,7 @@ Draw.loadPlugin(function(ui) {
   ChoiceState = function(){};
   ChoiceState.prototype.type = 'Choice';
   ChoiceState.prototype.create = function(){
-    var cell = createState(this, ChoiceState, 'shape=mxgraph.flowchart.decision;whiteSpace=wrap;html=1;gradientColor=none;dashed=1');
+    var cell = createState(this, ChoiceState, 'shape=stencil(rZZNT4QwEIZ/DddNodmgR8Pi0YsHzl12VpqFlrS46r+3UIl8FNOhJhzgHWaezvBSiGimK9ZClBDBGojoKUqSE5RccynMqdGZbqHsbOTOFGfnGmxEd0re4INfusqGuahA8a6P0jwiT+ae/qBZKYUwRUxNPYtM4qYY48Lkkk9bjBzio+V8/Qj2qjWIBjpQM/V39S9FMUjPCBIl+0ho0L6O0Jh0Xz85GvSwr6EcT1qYIfYjvYabwZsUaAZfTqgZfDnBZvAG4UkkXfjukBz9aAX6ZVqAfDn/0FPqy8J74jHZO8AcO8B43wDxplj35DvA3DVAmhll68NFszMrb29KvouLc4kt6z+Kq8AYbuQdJiNy7aKu1sf0motJunMT9k+Pydzjx0D+WA+xgtAC6AbKWmrYspfRV49vUDeeOc2uUsEfZrjyurY/S06TrbIH1f6XDcI3);whiteSpace=wrap;html=1;gradientColor=none;dashed=1');
     cell.setAttribute('choices', '');
     cell.setAttribute('default', '');
     return cell;
@@ -671,7 +678,7 @@ Draw.loadPlugin(function(ui) {
       form.body.appendChild(tr);
       return [select, input];
     }
-    else if (attrName != 'label' && attrName != 'placeholders')
+    else if (attrName != 'placeholders')
     {
       var input = form.addTextarea(attrName + ':', attrValue, 2);
       input.style.width = '100%';
@@ -1109,7 +1116,7 @@ Draw.loadPlugin(function(ui) {
     var cell = createEdge(this, ChoiceEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');     
     // cell.setAttribute('label', '%condition%');
     cell.setAttribute('placeholders', 1);  
-    cell.setAttribute('condition', '$.xyz == 1');
+    cell.setAttribute('condition', '$.foo == 1');
     cell.setAttribute('weight', '1');    
     return cell;
   };
@@ -1182,24 +1189,16 @@ Draw.loadPlugin(function(ui) {
   DefaultEdge.prototype.handler = awssfEdgeHandler;
   registCodec(DefaultEdge);
 
-	// Avoids having to bind all functions to "this"
-	var sb = ui.sidebar;
+  // Avoids having to bind all functions to "this"
+  var sb = ui.sidebar;
 
   // Adds custom sidebar entry
   sb.addPalette('awsStepFunctions', 'AWS Step Functions', true, function(content) {
-    
-    var cell = createAWSconfig();
-    content.appendChild(sb.createVertexTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label));
-    var verticies = [StartPoint, EndPoint, TaskState, PassState, ChoiceState, WaitState, SucceedState, FailState, ParallelState];
+    var verticies = [AWSconfig, StartPoint, EndPoint, TaskState, PassState, ChoiceState, WaitState, SucceedState, FailState, ParallelState];
     for (var i in verticies){
       var cell = verticies[i].prototype.create();
       content.appendChild(sb.createVertexTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label));
     }
-    // var edges = [NextEdge, ChoiceEdge, RetryEdge, CatchEdge];
-    // for (var i in edges){
-    //   var cell = edges[i].prototype.create();
-    //   content.appendChild(sb.createEdgeTemplateFromCells([cell], cell.geometry.width, cell.geometry.height, cell.label, true, false));
-    // }
   });
 
   // Collapses default sidebar entry and inserts this before
@@ -1286,15 +1285,7 @@ Draw.loadPlugin(function(ui) {
     }
     var label = cell.getAttribute("label");
     if (cell.isVertex() && names[label]){
-      if (awssfUtils.isStart(cell)){
-        // var found_same_parent = false;
-        // for(var i in names[label]){
-        //   if (cell.parent.id == names[label][i].parent.id){
-        //     found_same_parent = true;
-        //     break;
-        //   }
-        // }
-      }else{
+      if (!awssfUtils.isStart(cell) && !awssfUtils.isEnd(cell)){
         var index = 2;
         var new_label = label.replace(/(\d*)$/, index);
         while(names[new_label]){
@@ -1677,16 +1668,16 @@ Draw.loadPlugin(function(ui) {
       }
     }
     var root = model.cells[0];
-    var data = {
-      StartAt: startat,
-      States: states
-    }
+    var data = {};
     if (root.getAttribute("comment"))
       data.Comment = root.getAttribute("comment");
-    if (root.getAttribute("version"))
-      data.Version = root.getAttribute("version");
+    if (startat)
+      data.StartAt = startat;
+    data.States = states;
     if (root.getAttribute("timeout_seconds"))
       data.TimeoutSeconds = Number(root.getAttribute("timeout_seconds"));
+    if (root.getAttribute("version"))
+      data.Version = root.getAttribute("version");
     return data;
   }
 
@@ -1715,7 +1706,7 @@ Draw.loadPlugin(function(ui) {
     var node = codec.encode(model);
     var found = mxUtils.findNode(node, "type", "awssfAWSconfig");
     if (found == null){
-      mxUtils.alert("You need to put a AWSconfig.")
+      //mxUtils.alert("You need to put a AWSconfig.")
       return false;
     }
     var awsconfig = codec.decode(found);
