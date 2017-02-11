@@ -1,10 +1,23 @@
 # AWS Step Functions Workflow Designer
 
- You can make a step functions workflow with GUI and export JSON.
+## About
+ You can make a AWS step functions workflow with GUI and export JSON.
  
- This is a AWS Step Functions plugin for draw.io.
+ This is a AWS Step Functions plugin for [draw.io](https://github.com/jgraph/draw.io).
 
 [![intro](https://img.youtube.com/vi/NrMcFdTdhhU/0.jpg)](https://youtu.be/NrMcFdTdhhU)
+
+## Quick Start
+1. Access to https://www.draw.io/.
+1. Select Save Option (ex. Decide Later...)
+1. Select Menu [Extras]-[Plugins]
+1. Click [Add]
+1. Input https://rawgit.com/sakazuki/step-functions-draw.io/master/aws-step-functions.js
+1. [Apply]
+1. Reload the page
+
+- You can run locally draw.io in the browser too. See details [draw.io Wiki page](https://github.com/jgraph/draw.io/wiki/Building)
+
 
 ## Example
 1. Drag and drop a **Start** on a diagram
@@ -16,26 +29,16 @@
 1. Menu [StepFunctions]-[Export JSON]
 1. Copy the output and paste it to AWS Step Functions management console.
 
-## Setup
-- Access to https://www.draw.io/.
-- Select Save Option (ex. Decide Later...)
-- Select Menu [Extras]-[Plugins]
-- Click [Add]
-- Input https://rawgit.com/sakazuki/step-functions-draw.io/master/aws-step-functions.js
-  (Thanks: https://rawgit.com/)
-- [Apply]
-- Reload the page
-
 ## Usage
 ### Top-level fields
-- You can set them with [Edit Data...] on a canvas.
+- You can set them with [Edit Data...] on a diagram.
 
 ### AWS config
 - You can select a function from lamdba when you input AWS config variables.
 
 ### Choice Connection Condition field
 - You can use `==`, `>`, `<`, `>=`, `<=`, `!`, `&&`, `||`, `()`.
-- You can write it like `($.x == true) && ($.y == 3) && !($.z == 2)`
+- You can write it like `($.x == true) && ($.y == 3) && !($.z == 2)`.
 - I parse it using JSEP (https://github.com/soney/jsep) in Choice Condition.
 
 ### Retry
