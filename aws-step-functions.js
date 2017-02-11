@@ -433,7 +433,7 @@ Draw.loadPlugin(function(ui) {
   }
   TaskState.prototype.validate = function(cell, res){
     if (!res) res = [];
-    if (!cell.getAttribute("resource").match(/^arn:aws:\w*:\w+:\d{12}:\w+:\w+/)){
+    if (!cell.getAttribute("resource").match(/^arn:aws:[^:]*:[^:]+:\d{12}:[^:]+:.+/)){
       res.push("resource MUST be a URI that uniquely identifies the specific task to execute");
     }
     if (awssfUtils.validateNumber(cell.getAttribute("timeout_seconds")) == false){
