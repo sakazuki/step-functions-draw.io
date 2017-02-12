@@ -537,9 +537,10 @@ Draw.loadPlugin(function(ui) {
     var label = cell.getAttribute("label"); 
     data[label] = {
       Type: "Choice",
-      Comment: cell.getAttribute("comment"),
       Choices: []
     };
+    if (cell.getAttribute("comment"))
+      data[label].Comment = cell.getAttribute("comment");
     if (cell.getAttribute("input_path"))
       data[label].InputPath = cell.getAttribute("input_path");
     if (cell.getAttribute("output_path"))
@@ -837,8 +838,7 @@ Draw.loadPlugin(function(ui) {
     var label = cell.getAttribute("label"); 
     data[label] = {
       Type: "Parallel",
-      Branches: [],
-      Resource: cell.getAttribute("resource")
+      Branches: []
     };
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
