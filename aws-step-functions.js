@@ -1603,7 +1603,7 @@ Draw.loadPlugin(function(ui) {
       }
       if (!cell.isVertex()) continue;
       var label = cell.getAttribute("label");
-      if (label != null){
+      if (label != null && !awssfUtils.isStart(cell) && !awssfUtils.isEnd(cell)){
         if (checklist.UNIQ_NAME[1][label] >= 1){
           checklist.UNIQ_NAME[0] = false;
           checklist.UNIQ_NAME[1][label] += 1;
