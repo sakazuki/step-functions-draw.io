@@ -105,7 +105,7 @@ Draw.loadPlugin(function(ui) {
       "<": "LessThan",
       ">": "GreaterThan",
       "<=": "LessThanEquals",
-      ">=": "GreatherThanEquals"
+      ">=": "GreaterThanEquals"
     },
     parseJSEPObject: function (obj, res){
       if (res == null)
