@@ -77,7 +77,7 @@ Draw.loadPlugin(function(ui) {
     },
     validateJsonPath: function(val){
       if (!val) return null;
-      return !!(val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/))
+      return !!(val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/)) || (val == "null")
     },
     validateCommonAttributes: function(cell, res, check_result_path){
       if (!res) res = [];
