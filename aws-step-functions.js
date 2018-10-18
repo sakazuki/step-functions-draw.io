@@ -77,7 +77,7 @@ Draw.loadPlugin(function(ui) {
     },
     validateJsonPath: function(val){
       if (!val) return null;
-      return !!(val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/))
+      return !!(val.match(/^\$/) && !val.match(/([@,:?\[\]]|\.\.)/)) || (val == "null")
     },
     validateCommonAttributes: function(cell, res, check_result_path){
       if (!res) res = [];
@@ -88,7 +88,7 @@ Draw.loadPlugin(function(ui) {
         res.push("output_path MUST use only supported jsonpath");
       }
       if (check_result_path && (awssfUtils.validateJsonPath(cell.getAttribute("result_path")) == false)){
-        res.push("result_path MUST use only supported jsonpath");
+        res.push("result_path MUST use only supported jsonpath or null");
       }
       return res;
     },
