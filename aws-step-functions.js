@@ -375,8 +375,7 @@ Draw.loadPlugin(function(ui) {
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
-      Type: "Pass",
-      Resource: cell.getAttribute("resource")
+      Type: "Pass"
     };
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
