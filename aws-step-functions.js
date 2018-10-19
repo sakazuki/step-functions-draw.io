@@ -1683,13 +1683,13 @@ Draw.loadPlugin(function(ui) {
   ui.actions.addAction('awssfExportJSON', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(JSON.stringify(data, null, "  "));
+    mxUtils.popup(JSON.stringify(data, null, "  "), true);
   });
 
   ui.actions.addAction('awssfExportYAML', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(jsyaml.dump(data));
+    mxUtils.popup(jsyaml.dump(data), true);
   });
 
   ui.actions.addAction('awssfExport', function()
