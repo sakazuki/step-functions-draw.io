@@ -111,12 +111,25 @@ Draw.loadPlugin(function(ui) {
       if (res == null)
         res = [];
       if (obj.type == 'MemberExpression'){
-        res.unshift(obj.property.name);
+        if (obj.computed){
+          res.unshift('[' + this.parseJSEPObject(obj.property) + ']')
+        }else{
+          res.unshift(this.parseJSEPObject(obj.property))
+        }
         return this.parseJSEPObject(obj.object, res);
       }
       else if (obj.type == 'Identifier'){
         res.unshift(obj.name);
-        return res.join(".");      
+        return res.reduce((prev, cur) => {
+          if (cur[0] == '[') {
+              return prev + cur
+          }else{
+              return prev + "." + cur
+          }
+        })
+      }
+      else if (obj.type == 'Literal') {
+        return obj.value;
       }
     },
     parseJSEPValue: function (obj){
