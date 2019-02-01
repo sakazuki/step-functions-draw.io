@@ -384,7 +384,7 @@ Draw.loadPlugin(function(ui) {
   PassState.prototype.validate = function(cell, res){
     return awssfUtils.validateCommonAttributes(cell, res, true);
   }
-  PassState.prototype.toJSON = function(cell, cells){
+  PassState.prototype.expJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
@@ -406,7 +406,7 @@ Draw.loadPlugin(function(ui) {
       if (edge.source != cell) continue;
       if (awssfUtils.isNext(edge)){
         exist_next_edge = true;
-        Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
+        Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
       }
     }
     if (exist_next_edge == false || data[label].Next == 'End'){
@@ -460,7 +460,7 @@ Draw.loadPlugin(function(ui) {
     }
     return awssfUtils.validateCommonAttributes(cell, res, true);
   };
-  TaskState.prototype.toJSON = function(cell, cells){
+  TaskState.prototype.expJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
@@ -490,17 +490,17 @@ Draw.loadPlugin(function(ui) {
       for(var i in sorted_edges){
         var edge = sorted_edges[i];
         if (edge.source != cell) continue;
-        if (edge.awssf && edge.awssf.toJSON){
+        if (edge.awssf && edge.awssf.expJSON){
           if (awssfUtils.isRetry(edge)){
             if (!data[label]["Retry"]) data[label]["Retry"] = [];
-            data[label]["Retry"].push(edge.awssf.toJSON(edge, cells));
+            data[label]["Retry"].push(edge.awssf.expJSON(edge, cells));
           }
           else if (awssfUtils.isCatch(edge)){
             if (!data[label]["Catch"]) data[label]["Catch"] = [];
-            data[label]["Catch"].push(edge.awssf.toJSON(edge, cells));
+            data[label]["Catch"].push(edge.awssf.expJSON(edge, cells));
           }else if (awssfUtils.isNext(edge)){
             exist_next_edge = true;
-            Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
+            Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
           }
         }
       }
@@ -544,7 +544,7 @@ Draw.loadPlugin(function(ui) {
     }
     return awssfUtils.validateCommonAttributes(cell, res, false);
   };
-  ChoiceState.prototype.toJSON = function(cell, cells){
+  ChoiceState.prototype.expJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
@@ -567,10 +567,10 @@ Draw.loadPlugin(function(ui) {
         var edge = sorted_edges[i];
         if (edge.source != cell) continue;
         if (awssfUtils.isChoice(edge)){
-          data[label].Choices.push(edge.awssf.toJSON(edge, cells))
+          data[label].Choices.push(edge.awssf.expJSON(edge, cells))
         }
         else if (awssfUtils.isDefault(edge)){
-          Object.assign(data[label], edge.awssf.toJSON(edge, cells));
+          Object.assign(data[label], edge.awssf.expJSON(edge, cells));
         }
       }
     }
@@ -624,7 +624,7 @@ Draw.loadPlugin(function(ui) {
     }
     return awssfUtils.validateCommonAttributes(cell, res, false);
   };
-  WaitState.prototype.toJSON = function(cell, cells){
+  WaitState.prototype.expJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
@@ -655,7 +655,7 @@ Draw.loadPlugin(function(ui) {
       if (edge.source != cell) continue;
       if (awssfUtils.isNext(edge)){
         exist_next_edge = true;
-        Object.assign(data[label], edge.awssf.toJSON(edge, cells)) 
+        Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
       }
     }
     if (exist_next_edge == false || data[label].Next == 'End'){
@@ -751,7 +751,7 @@ Draw.loadPlugin(function(ui) {
     }
     return awssfUtils.validateCommonAttributes(cell, res, false);
   };  
-  SucceedState.prototype.toJSON = function(cell, cells){
+  SucceedState.prototype.expJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
@@ -792,7 +792,7 @@ Draw.loadPlugin(function(ui) {
     }
     return awssfUtils.validateCommonAttributes(cell, res, false);
   };
-  FailState.prototype.toJSON = function(cell, cells){
+  FailState.prototype.expJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
@@ -845,7 +845,7 @@ Draw.loadPlugin(function(ui) {
   ParallelState.prototype.validate = function(cell, res){
     return awssfUtils.validateCommonAttributes(cell, res, true);
   };
-  ParallelState.prototype.toJSON = function(cell, cells){
+  ParallelState.prototype.expJSON = function(cell, cells){
     var data = {};
     var label = cell.getAttribute("label"); 
     data[label] = {
@@ -895,8 +895,8 @@ Draw.loadPlugin(function(ui) {
         if (awssfUtils.isStart(child) || awssfUtils.isEnd(cell)) continue;
         if (child.isVertex()){
           if (awssfUtils.isParallel(child)) continue;
-          if (child.awssf &&  child.awssf.toJSON){
-            Object.assign(states, child.awssf.toJSON(child, cells));
+          if (child.awssf &&  child.awssf.expJSON){
+            Object.assign(states, child.awssf.expJSON(child, cells));
           }
         }
       }
@@ -915,17 +915,17 @@ Draw.loadPlugin(function(ui) {
       for(var i in sorted_edges){
         var edge = sorted_edges[i];
         if (edge.source != cell) continue;
-        if (edge.awssf.toJSON){
+        if (edge.awssf.expJSON){
           if (awssfUtils.isRetry(edge)){
             if (!data[label]["Retry"]) data[label]["Retry"] = [];
-            data[label]["Retry"].push(edge.awssf.toJSON(edge, cells));
+            data[label]["Retry"].push(edge.awssf.expJSON(edge, cells));
           }
           else if (awssfUtils.isCatch(edge)){
             if (!data[label]["Catch"]) data[label]["Catch"] = [];
-            data[label]["Catch"].push(edge.awssf.toJSON(edge, cells));
+            data[label]["Catch"].push(edge.awssf.expJSON(edge, cells));
           }else if (awssfUtils.isNext(edge)){
             exist_next_edge = true;
-            Object.assign(data[label], edge.awssf.toJSON(edge, cells));
+            Object.assign(data[label], edge.awssf.expJSON(edge, cells));
           }
         }
       }
@@ -976,7 +976,7 @@ Draw.loadPlugin(function(ui) {
     }
     return res;
   };
-  StartAtEdge.prototype.toJSON = function(cell, cells){
+  StartAtEdge.prototype.expJSON = function(cell, cells){
     if (cell.target != null){
       var data = {
         StartAt: cells[cell.target.id].getAttribute("label")
@@ -1004,7 +1004,7 @@ Draw.loadPlugin(function(ui) {
     }
     return res;
   };
-  NextEdge.prototype.toJSON = function(cell, cells){
+  NextEdge.prototype.expJSON = function(cell, cells){
     if (cell.target != null){
       var data = {
         Next: cells[cell.target.id].getAttribute("label")
@@ -1057,7 +1057,7 @@ Draw.loadPlugin(function(ui) {
     }
     return res;
   };
-  RetryEdge.prototype.toJSON = function(cell, cells){
+  RetryEdge.prototype.expJSON = function(cell, cells){
     var errors = cell.getAttribute("error_equals");
     errors = errors ? errors.split(/,\s*/) : [];
     if (cell.target != null){
@@ -1101,7 +1101,7 @@ Draw.loadPlugin(function(ui) {
     }
     return res;
   };
-  CatchEdge.prototype.toJSON = function(cell, cells){
+  CatchEdge.prototype.expJSON = function(cell, cells){
     var errors = cell.getAttribute("error_equals");
     errors = errors ? errors.split(/,\s*/) : [];    
     if (cell.target != null){
@@ -1149,7 +1149,7 @@ Draw.loadPlugin(function(ui) {
     }
     return res;
   };
-  ChoiceEdge.prototype.toJSON = function(cell, cells){
+  ChoiceEdge.prototype.expJSON = function(cell, cells){
     if (cell.target != null){
       var condition = cell.getAttribute("condition");
       var data;
@@ -1184,7 +1184,7 @@ Draw.loadPlugin(function(ui) {
     }
     return res;
   };
-  DefaultEdge.prototype.toJSON = function(cell, cells){
+  DefaultEdge.prototype.expJSON = function(cell, cells){
     if (cell.target != null){
       var data = {
         Default: cells[cell.target.id].getAttribute("label")
@@ -1648,7 +1648,7 @@ Draw.loadPlugin(function(ui) {
 
   function setupRoot(){
     if (!ui.editor.graph.getModel().cells) return;
-    var cell = ui.editor.graph.getModel().root;
+    var cell = ui.editor.graph.getModel().getRoot();
     if (cell && (cell.value == null)){
       cell.value = mxUtils.createXmlDocument().createElement('object');    
       if (cell.getAttribute("type") == null) cell.setAttribute("type", "awssfRoot");
@@ -1676,10 +1676,10 @@ Draw.loadPlugin(function(ui) {
       };
       if (awssfUtils.isStart(cell) || awssfUtils.isEnd(cell)) continue;
       if (cell.isVertex()){
-        Object.assign(states, cell.awssf.toJSON(cell, model.cells));
+        Object.assign(states, cell.awssf.expJSON(cell, model.cells));
       }
     }
-    var root = model.cells[0];
+    var root = model.getRoot();
     var data = {};
     if (root.getAttribute("comment"))
       data.Comment = root.getAttribute("comment");
