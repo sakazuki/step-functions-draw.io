@@ -1648,8 +1648,8 @@ Draw.loadPlugin(function(ui) {
 
   function setupRoot(){
     if (!ui.editor.graph.getModel().cells) return;
-    var cell = ui.editor.graph.getModel().cells[0];
-    if (cell.value == null){
+    var cell = ui.editor.graph.getModel().root;
+    if (cell && (cell.value == null)){
       cell.value = mxUtils.createXmlDocument().createElement('object');    
       if (cell.getAttribute("type") == null) cell.setAttribute("type", "awssfRoot");
       if (cell.getAttribute("name") == null) cell.setAttribute("name", "");
