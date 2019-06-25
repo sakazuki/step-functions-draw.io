@@ -33,6 +33,7 @@
 ## Usage
 ### Top-level fields
 - You can set them with [Edit Data...] on a diagram.
+  <img src="https://user-images.githubusercontent.com/1878694/59982817-e4b40b00-9652-11e9-92be-5a2e22eb6fb1.png" width="550">
 
 ### AWS config
 - You can select a function from lamdba when you input AWS config variables.
