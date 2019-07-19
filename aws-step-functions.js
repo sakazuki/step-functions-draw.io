@@ -180,6 +180,9 @@ Draw.loadPlugin(function(ui) {
         Object.assign(res, tmp);        
       }
       return res;
+    },
+    adjustJsonPath: function(val){
+      return (val === "null") ? null : val
     }
   }
 
@@ -402,11 +405,11 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
     if (cell.getAttribute("input_path"))
-      data[label].InputPath = cell.getAttribute("input_path");
+      data[label].InputPath = awssfUtils.adjustJsonPath(cell.getAttribute("input_path"));
     if (cell.getAttribute("output_path"))
-      data[label].OutputPath = cell.getAttribute("output_path");
+      data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
     if (cell.getAttribute("result_path"))
-      data[label].ResultPath = cell.getAttribute("result_path");
+      data[label].ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
     if (cell.getAttribute("result"))
       data[label].Result = cell.getAttribute("result");
     var exist_next_edge = false;
@@ -485,11 +488,11 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
     if (cell.getAttribute("input_path"))
-      data[label].InputPath = cell.getAttribute("input_path");
+      data[label].InputPath = awssfUtils.adjustJsonPath(cell.getAttribute("input_path"));
     if (cell.getAttribute("output_path"))
-      data[label].OutputPath = cell.getAttribute("output_path");
+      data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
     if (cell.getAttribute("result_path"))
-      data[label].ResultPath = cell.getAttribute("result_path");
+      data[label].ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
     if (cell.getAttribute("timeout_seconds"))
       data[label].TimeoutSeconds = Number(cell.getAttribute("timeout_seconds"));
     if (cell.getAttribute("heartbeat_seconds"))
@@ -569,9 +572,9 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
     if (cell.getAttribute("input_path"))
-      data[label].InputPath = cell.getAttribute("input_path");
+      data[label].InputPath = awssfUtils.adjustJsonPath(cell.getAttribute("input_path"));
     if (cell.getAttribute("output_path"))
-      data[label].OutputPath = cell.getAttribute("output_path");
+      data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
     if (cell.edges){
       var sorted_edges = cell.edges.sort(function(a, b){
         if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
@@ -648,9 +651,9 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
     if (cell.getAttribute("input_path"))
-      data[label].InputPath = cell.getAttribute("input_path");
+      data[label].InputPath = awssfUtils.adjustJsonPath(cell.getAttribute("input_path"));
     if (cell.getAttribute("output_path"))
-      data[label].OutputPath = cell.getAttribute("output_path");
+      data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
 
     var options = this.cst.DURATION_FORMAT;
     for(var j in options){
@@ -775,9 +778,9 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
     if (cell.getAttribute("input_path"))
-      data[label].InputPath = cell.getAttribute("input_path");
+      data[label].InputPath = awssfUtils.adjustJsonPath(cell.getAttribute("input_path"));
     if (cell.getAttribute("output_path"))
-      data[label].OutputPath = cell.getAttribute("output_path");
+      data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
     return data;
   };
   registCodec(SucceedState);
@@ -870,11 +873,11 @@ Draw.loadPlugin(function(ui) {
     if (cell.getAttribute("comment"))
       data[label].Comment = cell.getAttribute("comment");
     if (cell.getAttribute("input_path"))
-      data[label].InputPath = cell.getAttribute("input_path");
+      data[label].InputPath = awssfUtils.adjustJsonPath(cell.getAttribute("input_path"));
     if (cell.getAttribute("output_path"))
-      data[label].OutputPath = cell.getAttribute("output_path");
+      data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
     if (cell.getAttribute("result_path"))
-      data[label].ResultPath = cell.getAttribute("result_path");
+      data[label].ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
     
     var startat = [];
     for(var i in cell.children){
