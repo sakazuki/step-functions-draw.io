@@ -1592,7 +1592,8 @@ Draw.loadPlugin(function(ui) {
 	mxResources.parse('awssfValidate=Validate');
 	mxResources.parse('awssfExportJSON=Export JSON');
 	mxResources.parse('awssfExportYAML=Export YAML');
-	mxResources.parse('awssfExport=Export');
+  mxResources.parse('awssfExport=Export');
+  mxResources.parse('awssfImportJSON=Import JSON');
 	mxResources.parse('awssfLambda=Lambda');
   mxResources.parse('awssfDeploy=Deploy(CORS not supported)');
   mxResources.parse('awssfInvoke=Invoke(CORS not supported)');
@@ -1730,6 +1731,13 @@ Draw.loadPlugin(function(ui) {
     mxUtils.popup(mxUtils.getPrettyXml(node), true);
   });
 
+  ui.actions.addAction('awssfImportJSON', function()
+  {
+    var dlg = new awssfImportDialog(ui, 'Insert from Text');
+    ui.showDialog(dlg.container, 620, 420, true, false);
+    dlg.init();
+  });
+
   function setupAWSconfig(){
     var codec = new mxCodec();
     var model = ui.editor.graph.getModel();
@@ -1809,11 +1817,258 @@ Draw.loadPlugin(function(ui) {
 
 	var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
 	{
-		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport' , '-', 'awssfDeploy', 'awssfInvoke']);
+		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport' , 'awssfImportJSON', '-', 'awssfDeploy', 'awssfInvoke']);
 	});
 	
 	// Inserts voice menu before help menu
 	var menu = menu.parentNode.insertBefore(menu, menu.previousSibling.previousSibling.previousSibling);
 
+  var awssfImportDialog = function(editorUi, title, defaultType)
+  {
+    var insertPoint = editorUi.editor.graph.getFreeInsertPoint();
+    var graph = editorUi.editor.graph;
 
+    function parse(text)
+    {
+      var json = JSON.parse(text.trim());
+      var sp = StartPoint.prototype.create(new mxGeometry(80, 0, 30, 30));
+      var inserted = [sp];
+      var vertexes = {};
+      var cell;
+      for (var name in json.States) {
+        var body = json.States[name]
+        if (body.Type === "Task") {
+          cell = TaskState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setAttribute("resource", body.Resource || "");
+          cell.setAttribute("parameters", JSON.stringify(body.Parameters) || "");
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("input_path", body.InputPath || "")
+          cell.setAttribute("output_path", body.OutputPath || "")
+          cell.setAttribute("result_path", body.ResultPath || "")
+          cell.setAttribute("timeout_seconds", body.TimeoutSeconds || "")
+          cell.setAttribute("heartbeat_seconds", body.HeartbeatSeconds || "")
+        } else if (body.Type === "Pass") {
+          cell = PassState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("input_path", body.InputPath || "")
+          cell.setAttribute("output_path", body.OutputPath || "")
+          cell.setAttribute("result_path", body.ResultPath || "")
+          cell.setAttribute("result", body.Result || "")
+        } else if (body.Type === "Choice") {
+          cell = ChoiceState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          // cell.setAttribute("choices", body.Choices || "")
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("input_path", body.InputPath || "")
+          cell.setAttribute("output_path", body.OutputPath || "")
+        } else if (body.Type === "Wait") {
+          cell = WaitState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("input_path", body.InputPath || "")
+          cell.setAttribute("output_path", body.OutputPath || "")
+        } else if (body.Type === "Succeed") {
+          cell = SucceedState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("input_path", body.InputPath || "")
+          cell.setAttribute("output_path", body.OutputPath || "")
+        } else if (body.Type === "Fail") {
+          cell = FailState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("error", body.Error || "")
+          cell.setAttribute("cause", body.Cause || "")
+        } else if (body.Type === "Parallel") {
+          cell = ParallelState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("input_path", body.InputPath || "")
+          cell.setAttribute("output_path", body.OutputPath || "")
+          cell.setAttribute("result_path", body.ResultPath || "")
+        }
+        inserted.push(cell);
+        vertexes[name] = cell;
+      }
+      var ep = EndPoint.prototype.create(new mxGeometry(80, 0, 30, 30));
+      inserted.push(ep)
+      var edge = StartAtEdge.prototype.create()
+      edge.source = sp
+      edge.target = vertexes[json.StartAt]
+      inserted.push(edge)
+      for (var name in json.States) {
+        var body = json.States[name]
+        if (body.Next && vertexes[body.Next]) {
+          edge = NextEdge.prototype.create('Next');
+          edge.source = vertexes[name];
+          edge.target = vertexes[body.Next];
+          inserted.push(edge)
+        }
+        if (body.Retry) {
+          var edge = RetryEdge.prototype.create('Retry');
+          edge.source = vertexes[name];
+          edge.target = vertexes[name];
+          edge.setAttribute('error_equals', body.Retry.ErrorEquals || "");
+          edge.setAttribute('interval_seconds', body.Retry.IntervalSeconds || "");
+          edge.setAttribute('max_attempts', body.Retry.MaxAttempts || "");
+          edge.setAttribute('backoff_rate', body.Retry.BackoffRate || "");
+          // edge.setAttribute('weight', body.Retry.IntervalSeconds || "");
+          inserted.push(edge)
+        }
+        if (body.Catch && body.Catch.length > 0) {
+          for (var i in body.Catch) {
+            var edge = CatchEdge.prototype.create('Catch');
+            edge.source = vertexes[name];
+            edge.setAttribute('error_equals', body.Catch[i].ErrorEquals || "");
+            edge.target = vertexes[body.Catch[i].Next];
+            inserted.push(edge)
+          }
+        }
+        if (body.Choices && body.Choices.length > 0) {
+
+          function conv2JSEP(json){
+
+          }
+          for (var i in body.Choices) {
+            var edge = ChoiceEdge.prototype.create('Choice');
+            edge.source = vertexes[name];
+            edge.setAttribute('condition', body.Choices[i].Variable || "");
+            // TODO:
+            edge.target = vertexes[body.Choices[i].Next];
+            inserted.push(edge)
+          }
+        }
+        if (body.Default && vertexes[body.Default]){
+          var edge = DefaultEdge.prototype.create('Default');
+          edge.source = vertexes[name];
+          edge.target = vertexes[body.Default];
+          inserted.push(edge)
+        }
+        if (body.End) {
+          var edge = NextEdge.prototype.create('Next');
+          edge.source = vertexes[name];
+          edge.target = ep;
+          inserted.push(edge)
+        }
+      }
+      graph.getModel().beginUpdate();
+      try
+      {
+        cell = graph.addCells(inserted)
+        graph.fireEvent(new mxEventObject('cellsInserted', 'cells', inserted));
+      }
+      finally
+      {
+        graph.getModel().endUpdate();
+      }
+      
+      graph.scrollCellToVisible(graph.getSelectionCell());
+      graph.setSelectionCells(inserted);
+      graph.container.focus();
+      var layout = new mxHierarchicalLayout(graph, mxConstants.DIRECTION_NORTH);
+      layout.intraCellSpacing = 40;
+      layout.interRankCellSpacing = 40;
+      layout.interHierarchySpacing = 40;
+      layout.parallelEdgeSpacing = 10;
+      var executeLayout = function(change, post)
+      {
+        graph.getModel().beginUpdate();
+        try
+        {
+          if (change != null)
+          {
+            change();
+          }
+          
+          layout.execute(graph.getDefaultParent());
+        }
+        catch (e)
+        {
+          throw e;
+        }
+        finally
+        {
+          // New API for animating graph layout results asynchronously
+          var morph = new mxMorphing(graph);
+          morph.addListener(mxEvent.DONE, mxUtils.bind(this, function()
+          {
+            graph.getModel().endUpdate();
+            
+            if (post != null)
+            {
+              post();
+            }
+          }));
+          
+          morph.startAnimation();
+        }
+      }
+      executeLayout();
+      var root = graph.getModel().getRoot();
+      root.setAttribute("comment", json.Comment || "");
+      root.setAttribute("timeout_seconds", json.TimeoutSeconds || "");
+      root.setAttribute("version", json.Version || "");
+    }
+    var div = document.createElement('div');
+    div.style.textAlign = 'right';
+    
+    var textarea = document.createElement('textarea');
+    textarea.style.resize = 'none';
+    textarea.style.width = '100%';
+    textarea.style.height = '354px';
+    textarea.style.marginBottom = '16px';
+
+    var defaultValue = ''; //getDefaultValue();
+    textarea.value = defaultValue;
+    div.appendChild(textarea);
+    this.init = function()
+    {
+      textarea.focus();
+    };
+    var cancelBtn = mxUtils.button(mxResources.get('close'), function()
+    {
+      if (textarea.value == defaultValue)
+      {
+        editorUi.hideDialog();
+      }
+      else
+      {
+        editorUi.confirm(mxResources.get('areYouSure'), function()
+        {
+          editorUi.hideDialog();
+        });
+      }
+    });
+    
+    cancelBtn.className = 'geBtn';
+    
+    if (editorUi.editor.cancelFirst)
+    {
+      div.appendChild(cancelBtn);
+    }
+    
+    var okBtn = mxUtils.button(mxResources.get('insert'), function()
+    {
+      editorUi.hideDialog();
+      parse(textarea.value);
+    });
+    div.appendChild(okBtn);
+    
+    okBtn.className = 'geBtn gePrimaryBtn';
+    
+    if (!editorUi.editor.cancelFirst)
+    {
+      div.appendChild(cancelBtn);
+    }
+    this.container = div;
+  }
 });
