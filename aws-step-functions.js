@@ -181,6 +181,33 @@ Draw.loadPlugin(function(ui) {
       }
       return res;
     },
+    ruleToJSEP(choice){
+      var m;
+      var variable = choice.Variable;
+      var ops = {
+        And: "&&",
+        Or: "||",
+        Equals: "==",
+        GreaterThan: ">",
+        GreaterThanEquals: ">=",
+        LessThan: "<",
+        LessThanEquals: "<="
+      }
+      for (var key in choice) {
+        var value = choice[key]
+        if (key.match(/^(And|Or)$/)) {
+          return value.map(ch => "(" + this.ruleToJSEP(ch) +")").join(" " + ops[key] + " ")
+        } else if (key.match(/^(Not)$/)) {
+          return "!(" + this.ruleToJSEP(value) + ")"
+        } else if (m = key.match(/^(Boolean|Numeric|String|Timestamp)(Equals|GreaterThan|GreaterThanEquals|LessThan|LessThanEquals)$/)) {
+          if (m[1].match(/(String|Timestamp)/i)){
+            return [variable, ops[m[2]], '"' + value + '"'].join(" ")
+          } else {
+            return [variable, ops[m[2]], value].join(" ")
+          }
+        }
+      }
+    },
     adjustJsonPath: function(val){
       return (val === "null") ? null : val
     }
@@ -827,7 +854,7 @@ Draw.loadPlugin(function(ui) {
 
   ParallelState = function(){};
   ParallelState.prototype.type = 'Parallel';
-  ParallelState.prototype.create = function(){
+  ParallelState.prototype.create = function(withBranch = true){
     var cell = createState(this, ParallelState);
     cell.setStyle('swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none;');
     cell.setGeometry(new mxGeometry(0, 0, 480, 200));
@@ -835,20 +862,22 @@ Draw.loadPlugin(function(ui) {
     cell.setAttribute('branches', '');
     var sp = StartPoint.prototype.create(new mxGeometry((cell.geometry.width - 30)/2, 40, 30, 30));
     cell.insert(sp);
-    var task1 = TaskState.prototype.create();
-    task1.setGeometry(new mxGeometry(80, 80, task1.geometry.width, task1.geometry.height));
-    cell.insert(task1);
-    var edge1 = StartAtEdge.prototype.create();
-    sp.insertEdge(edge1, true);
-    task1.insertEdge(edge1, false);
-    cell.insert(edge1);  
-    var task2 = TaskState.prototype.create();
-    task2.setGeometry(new mxGeometry(320, 80, task2.geometry.width, task2.geometry.height));
-    cell.insert(task2);
-    var edge2 = StartAtEdge.prototype.create();
-    sp.insertEdge(edge2, true);
-    task2.insertEdge(edge2, false);
-    cell.insert(edge2);  
+    if (withBranch) {
+      var task1 = TaskState.prototype.create();
+      task1.setGeometry(new mxGeometry(80, 80, task1.geometry.width, task1.geometry.height));
+      cell.insert(task1);
+      var edge1 = StartAtEdge.prototype.create();
+      sp.insertEdge(edge1, true);
+      task1.insertEdge(edge1, false);
+      cell.insert(edge1);  
+      var task2 = TaskState.prototype.create();
+      task2.setGeometry(new mxGeometry(320, 80, task2.geometry.width, task2.geometry.height));
+      cell.insert(task2);
+      var edge2 = StartAtEdge.prototype.create();
+      sp.insertEdge(edge2, true);
+      task2.insertEdge(edge2, false);
+      cell.insert(edge2);  
+    }
     return cell;
   };
   ParallelState.prototype.hiddenAttributes = ['branches'];
@@ -1826,21 +1855,19 @@ Draw.loadPlugin(function(ui) {
   var awssfImportDialog = function(editorUi, title, defaultType)
   {
     var insertPoint = editorUi.editor.graph.getFreeInsertPoint();
+    var dx = insertPoint.x;
+    var dy = 80;
     var graph = editorUi.editor.graph;
 
-    function parse(text)
-    {
-      var json = JSON.parse(text.trim());
-      var sp = StartPoint.prototype.create(new mxGeometry(80, 0, 30, 30));
-      var inserted = [sp];
-      var vertexes = {};
+    function recurseStates(states){
+      var res = {hash: {}, list: []};
       var cell;
-      for (var name in json.States) {
-        var body = json.States[name]
+      for (var name in states) {
+        var body = states[name]
         if (body.Type === "Task") {
           cell = TaskState.prototype.create();
           cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
           cell.setAttribute("resource", body.Resource || "");
           cell.setAttribute("parameters", JSON.stringify(body.Parameters) || "");
           cell.setAttribute("comment", body.Comment || "");
@@ -1852,7 +1879,7 @@ Draw.loadPlugin(function(ui) {
         } else if (body.Type === "Pass") {
           cell = PassState.prototype.create();
           cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
           cell.setAttribute("comment", body.Comment || "");
           cell.setAttribute("input_path", body.InputPath || "")
           cell.setAttribute("output_path", body.OutputPath || "")
@@ -1861,57 +1888,75 @@ Draw.loadPlugin(function(ui) {
         } else if (body.Type === "Choice") {
           cell = ChoiceState.prototype.create();
           cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
-          // cell.setAttribute("choices", body.Choices || "")
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
           cell.setAttribute("comment", body.Comment || "");
           cell.setAttribute("input_path", body.InputPath || "")
           cell.setAttribute("output_path", body.OutputPath || "")
         } else if (body.Type === "Wait") {
           cell = WaitState.prototype.create();
           cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
           cell.setAttribute("comment", body.Comment || "");
           cell.setAttribute("input_path", body.InputPath || "")
           cell.setAttribute("output_path", body.OutputPath || "")
+          var options = WaitState.prototype.cst.DURATION_FORMAT;
+          for(var j in options){
+            var key = awssfUtils.camelToSnake(options[j]);
+            if (body[options[j]]) {
+              cell.setAttribute(key, body[options[j]])
+            } else {
+              cell.value.removeAttribute(key)
+            }
+          }
         } else if (body.Type === "Succeed") {
           cell = SucceedState.prototype.create();
           cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
           cell.setAttribute("comment", body.Comment || "");
           cell.setAttribute("input_path", body.InputPath || "")
           cell.setAttribute("output_path", body.OutputPath || "")
         } else if (body.Type === "Fail") {
           cell = FailState.prototype.create();
           cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
           cell.setAttribute("comment", body.Comment || "");
           cell.setAttribute("error", body.Error || "")
           cell.setAttribute("cause", body.Cause || "")
         } else if (body.Type === "Parallel") {
-          cell = ParallelState.prototype.create();
+          cell = ParallelState.prototype.create(false);
           cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(80, 80 * inserted.length, cell.geometry.width, cell.geometry.height));
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
           cell.setAttribute("comment", body.Comment || "");
           cell.setAttribute("input_path", body.InputPath || "")
           cell.setAttribute("output_path", body.OutputPath || "")
           cell.setAttribute("result_path", body.ResultPath || "")
+          for(var branch in body.Branches) {
+            var _sub = recurseStates(body.Branches[branch].States)
+            for(var _cell of _sub.list) cell.insert(_cell)
+            Object.assign(res.hash, _sub.hash)
+          }
         }
-        inserted.push(cell);
-        vertexes[name] = cell;
+        res.hash[name] = cell;
+        res.list.push(cell);
       }
-      var ep = EndPoint.prototype.create(new mxGeometry(80, 0, 30, 30));
-      inserted.push(ep)
-      var edge = StartAtEdge.prototype.create()
-      edge.source = sp
-      edge.target = vertexes[json.StartAt]
-      inserted.push(edge)
+      return res;
+    }
+
+    function recurseEdges(json, vertexes, sp, ep){
+      var res = [];
+      if (json.StartAt && sp) {
+        var edge = StartAtEdge.prototype.create()
+        edge.source = sp
+        edge.target = vertexes[json.StartAt]
+        res.push(edge);
+      }
       for (var name in json.States) {
         var body = json.States[name]
         if (body.Next && vertexes[body.Next]) {
           edge = NextEdge.prototype.create('Next');
           edge.source = vertexes[name];
           edge.target = vertexes[body.Next];
-          inserted.push(edge)
+          res.push(edge)
         }
         if (body.Retry) {
           var edge = RetryEdge.prototype.create('Retry');
@@ -1922,48 +1967,70 @@ Draw.loadPlugin(function(ui) {
           edge.setAttribute('max_attempts', body.Retry.MaxAttempts || "");
           edge.setAttribute('backoff_rate', body.Retry.BackoffRate || "");
           // edge.setAttribute('weight', body.Retry.IntervalSeconds || "");
-          inserted.push(edge)
+          res.push(edge)
         }
         if (body.Catch && body.Catch.length > 0) {
           for (var i in body.Catch) {
             var edge = CatchEdge.prototype.create('Catch');
             edge.source = vertexes[name];
             edge.setAttribute('error_equals', body.Catch[i].ErrorEquals || "");
+            //TODO: maybe weight control
             edge.target = vertexes[body.Catch[i].Next];
-            inserted.push(edge)
+            res.push(edge)
           }
         }
         if (body.Choices && body.Choices.length > 0) {
-
-          function conv2JSEP(json){
-
-          }
           for (var i in body.Choices) {
             var edge = ChoiceEdge.prototype.create('Choice');
             edge.source = vertexes[name];
-            edge.setAttribute('condition', body.Choices[i].Variable || "");
-            // TODO:
+            edge.setAttribute('condition', awssfUtils.ruleToJSEP(body.Choices[i]));
+            //TODO: maybe weight control
             edge.target = vertexes[body.Choices[i].Next];
-            inserted.push(edge)
+            res.push(edge)
           }
         }
         if (body.Default && vertexes[body.Default]){
           var edge = DefaultEdge.prototype.create('Default');
           edge.source = vertexes[name];
           edge.target = vertexes[body.Default];
-          inserted.push(edge)
+          res.push(edge)
         }
-        if (body.End) {
-          var edge = NextEdge.prototype.create('Next');
-          edge.source = vertexes[name];
-          edge.target = ep;
-          inserted.push(edge)
+        if (body.End || (body.Type && body.Type.match(/(Succeed|Fail)/))) {
+          if (ep) {
+            var edge = NextEdge.prototype.create('Next');
+            edge.source = vertexes[name];
+            edge.target = ep;
+            res.push(edge)
+          }
+        }
+        if (body.Type === "Parallel") {
+          for(var branch in body.Branches) {
+            var _sp = vertexes[name].getChildAt(0);
+            var tmp = recurseEdges(body.Branches[branch], vertexes, _sp);
+            tmp.map(v => vertexes[name].insert(v))
+            // res.push(...tmp)
+          }
         }
       }
+      return res;
+    }
+
+    function parse(text)
+    {
+      var json = JSON.parse(text.trim());
+      var res = recurseStates(json.States);
+      var inserted = res.list;
+      var vertexes = res.hash;
+      var sp = StartPoint.prototype.create(new mxGeometry(80, 0, 40, 40));
+      inserted.unshift(sp);
+      var ep = EndPoint.prototype.create(new mxGeometry(80, 0, 40, 40));
+      inserted.push(ep)
+      var tmp = recurseEdges(json, vertexes, sp, ep);
+      inserted.push(...tmp);
       graph.getModel().beginUpdate();
       try
       {
-        cell = graph.addCells(inserted)
+        var cell = graph.addCells(inserted)
         graph.fireEvent(new mxEventObject('cellsInserted', 'cells', inserted));
       }
       finally
@@ -1988,8 +2055,7 @@ Draw.loadPlugin(function(ui) {
           {
             change();
           }
-          
-          layout.execute(graph.getDefaultParent());
+          layout.execute(graph.getDefaultParent(), graph.getSelectionCells());
         }
         catch (e)
         {
