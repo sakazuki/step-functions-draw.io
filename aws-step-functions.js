@@ -1,8 +1,8 @@
 mxscript("https://cdn.rawgit.com/soney/jsep/b8baab7b/build/jsep.min.js");
 mxscript("https://cdn.rawgit.com/nodeca/js-yaml/9c1894e2/dist/js-yaml.min.js");
-mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.9.0.min.js");
+mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.510.0.min.js");
 // mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
-//mxscript("https://localhost:8000/js/aws-sdk-2.9.0.js");
+// mxscript("https://f248fda6.ngrok.io/aws-sdk-2.510.0.js");
 //mxscript("https://localhost:8000/js/jsep.min.js");
 
 Draw.loadPlugin(function(ui) {
@@ -1619,10 +1619,10 @@ Draw.loadPlugin(function(ui) {
 
 	mxResources.parse('stepFunctions=StepFunctions');
 	mxResources.parse('awssfValidate=Validate');
+  mxResources.parse('awssfImportJSON=Import JSON');
 	mxResources.parse('awssfExportJSON=Export JSON');
 	mxResources.parse('awssfExportYAML=Export YAML');
   mxResources.parse('awssfExport=Export');
-  mxResources.parse('awssfImportJSON=Import JSON');
 	mxResources.parse('awssfLambda=Lambda');
   mxResources.parse('awssfDeploy=Deploy(CORS not supported)');
   mxResources.parse('awssfInvoke=Invoke(CORS not supported)');
@@ -1815,6 +1815,21 @@ Draw.loadPlugin(function(ui) {
     // });
   }
 
+  function getStateMachineList(callback){
+    if (!setupAWSconfig()) return;
+    var list = [];
+    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
+    stepfunctions.listStateMachines({}, function(err,data){
+      if (err) console.log(err, err.stack)
+      else{
+        for (var i of data.StateMachines) {
+          list.push(i)
+        }
+        callback(list)
+      }
+    })
+  }
+
   function isSupproted(){
     var sdk_supported = (typeof(AWS) == "object") && (typeof(AWS.StepFunctions) == "object");
     var cors_supported = false;
@@ -1846,7 +1861,7 @@ Draw.loadPlugin(function(ui) {
 
 	var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
 	{
-		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport' , 'awssfImportJSON', '-', 'awssfDeploy', 'awssfInvoke']);
+		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfImportJSON', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport', '-', 'awssfDeploy', 'awssfInvoke']);
 	});
 	
 	// Inserts voice menu before help menu
@@ -1854,17 +1869,26 @@ Draw.loadPlugin(function(ui) {
 
   var awssfImportDialog = function(editorUi, title, defaultType)
   {
-    var insertPoint = editorUi.editor.graph.getFreeInsertPoint();
-    var dx = insertPoint.x;
-    var dy = 80;
     var graph = editorUi.editor.graph;
+    var bounds = graph.getGraphBounds();
+    var dx = bounds.x / 2;
+    var dy = 80;
 
     function recurseStates(states){
       var res = {hash: {}, list: []};
       var cell;
       for (var name in states) {
         var body = states[name]
-        if (body.Type === "Task") {
+        if (body.Type === "Pass") {
+          cell = PassState.prototype.create();
+          cell.setAttribute('label', name);
+          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
+          cell.setAttribute("comment", body.Comment || "");
+          cell.setAttribute("input_path", body.InputPath || "")
+          cell.setAttribute("output_path", body.OutputPath || "")
+          cell.setAttribute("result_path", body.ResultPath || "")
+          cell.setAttribute("result", body.Result || "")
+        } else if (body.Type === "Task") {
           cell = TaskState.prototype.create();
           cell.setAttribute('label', name);
           cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
@@ -1876,15 +1900,6 @@ Draw.loadPlugin(function(ui) {
           cell.setAttribute("result_path", body.ResultPath || "")
           cell.setAttribute("timeout_seconds", body.TimeoutSeconds || "")
           cell.setAttribute("heartbeat_seconds", body.HeartbeatSeconds || "")
-        } else if (body.Type === "Pass") {
-          cell = PassState.prototype.create();
-          cell.setAttribute('label', name);
-          cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
-          cell.setAttribute("comment", body.Comment || "");
-          cell.setAttribute("input_path", body.InputPath || "")
-          cell.setAttribute("output_path", body.OutputPath || "")
-          cell.setAttribute("result_path", body.ResultPath || "")
-          cell.setAttribute("result", body.Result || "")
         } else if (body.Type === "Choice") {
           cell = ChoiceState.prototype.create();
           cell.setAttribute('label', name);
@@ -1952,11 +1967,25 @@ Draw.loadPlugin(function(ui) {
       }
       for (var name in json.States) {
         var body = json.States[name]
+        if (body.Default && vertexes[body.Default]){
+          var edge = DefaultEdge.prototype.create('Default');
+          edge.source = vertexes[name];
+          edge.target = vertexes[body.Default];
+          res.push(edge)
+        }
         if (body.Next && vertexes[body.Next]) {
           edge = NextEdge.prototype.create('Next');
           edge.source = vertexes[name];
           edge.target = vertexes[body.Next];
           res.push(edge)
+        }
+        if (body.End || (body.Type && body.Type.match(/(Succeed|Fail)/))) {
+          if (ep) {
+            var edge = NextEdge.prototype.create('Next');
+            edge.source = vertexes[name];
+            edge.target = ep;
+            res.push(edge)
+          }
         }
         if (body.Retry) {
           var edge = RetryEdge.prototype.create('Retry');
@@ -1989,20 +2018,6 @@ Draw.loadPlugin(function(ui) {
             res.push(edge)
           }
         }
-        if (body.Default && vertexes[body.Default]){
-          var edge = DefaultEdge.prototype.create('Default');
-          edge.source = vertexes[name];
-          edge.target = vertexes[body.Default];
-          res.push(edge)
-        }
-        if (body.End || (body.Type && body.Type.match(/(Succeed|Fail)/))) {
-          if (ep) {
-            var edge = NextEdge.prototype.create('Next');
-            edge.source = vertexes[name];
-            edge.target = ep;
-            res.push(edge)
-          }
-        }
         if (body.Type === "Parallel") {
           for(var branch in body.Branches) {
             var _sp = vertexes[name].getChildAt(0);
@@ -2021,9 +2036,9 @@ Draw.loadPlugin(function(ui) {
       var res = recurseStates(json.States);
       var inserted = res.list;
       var vertexes = res.hash;
-      var sp = StartPoint.prototype.create(new mxGeometry(80, 0, 40, 40));
+      var sp = StartPoint.prototype.create(new mxGeometry(dx, 0, 40, 40));
       inserted.unshift(sp);
-      var ep = EndPoint.prototype.create(new mxGeometry(80, 0, 40, 40));
+      var ep = EndPoint.prototype.create(new mxGeometry(dx, 0, 40, 40));
       inserted.push(ep)
       var tmp = recurseEdges(json, vertexes, sp, ep);
       inserted.push(...tmp);
@@ -2038,9 +2053,7 @@ Draw.loadPlugin(function(ui) {
         graph.getModel().endUpdate();
       }
       
-      graph.scrollCellToVisible(graph.getSelectionCell());
       graph.setSelectionCells(inserted);
-      graph.container.focus();
       var layout = new mxHierarchicalLayout(graph, mxConstants.DIRECTION_NORTH);
       layout.intraCellSpacing = 40;
       layout.interRankCellSpacing = 40;
@@ -2051,10 +2064,6 @@ Draw.loadPlugin(function(ui) {
         graph.getModel().beginUpdate();
         try
         {
-          if (change != null)
-          {
-            change();
-          }
           layout.execute(graph.getDefaultParent(), graph.getSelectionCells());
         }
         catch (e)
@@ -2068,11 +2077,6 @@ Draw.loadPlugin(function(ui) {
           morph.addListener(mxEvent.DONE, mxUtils.bind(this, function()
           {
             graph.getModel().endUpdate();
-            
-            if (post != null)
-            {
-              post();
-            }
           }));
           
           morph.startAnimation();
@@ -2086,7 +2090,18 @@ Draw.loadPlugin(function(ui) {
     }
     var div = document.createElement('div');
     div.style.textAlign = 'right';
-    
+    if (isSupproted()) {
+      var select = document.createElement('select');
+      getStateMachineList(function(list){
+        for (var j in list){
+          var option = document.createElement('option');
+          mxUtils.writeln(option, options[j].name);
+          option.setAttribute('value', options[j].stateMachineArn);
+          select.appendChild(option);
+        }
+      });
+      div.appendChild(select);
+    }
     var textarea = document.createElement('textarea');
     textarea.style.resize = 'none';
     textarea.style.width = '100%';
@@ -2122,7 +2137,7 @@ Draw.loadPlugin(function(ui) {
       div.appendChild(cancelBtn);
     }
     
-    var okBtn = mxUtils.button(mxResources.get('insert'), function()
+    var okBtn = mxUtils.button(mxResources.get('import'), function()
     {
       editorUi.hideDialog();
       parse(textarea.value);
