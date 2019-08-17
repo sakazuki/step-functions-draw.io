@@ -1,0 +1,28 @@
+{
+  "name": "step-functions-draw.io",
+  "version": "1.0.0",
+  "description": "You can make a AWS step functions workflow with GUI on the browser and export JSON.  You can import JSON of AWS step functions workflow and update it.",
+  "main": "carlo.js",
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {
+    "carlo": "^0.9.46",
+    "aws-sdk": "^2.511.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sakazuki/step-functions-draw.io.git"
+  },
+  "keywords": [],
+  "author": "sakazuki",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/sakazuki/step-functions-draw.io/issues"
+  },
+  "homepage": "https://github.com/sakazuki/step-functions-draw.io#readme"
+}

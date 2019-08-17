@@ -1619,13 +1619,15 @@ Draw.loadPlugin(function(ui) {
 
 	mxResources.parse('stepFunctions=StepFunctions');
 	mxResources.parse('awssfValidate=Validate');
-  mxResources.parse('awssfImportJSON=Import JSON');
+  mxResources.parse('awssfImportJSON=Import...');
+  mxResources.parse('awssfImportBtn=Import');
 	mxResources.parse('awssfExportJSON=Export JSON');
 	mxResources.parse('awssfExportYAML=Export YAML');
   mxResources.parse('awssfExport=Export');
 	mxResources.parse('awssfLambda=Lambda');
-  mxResources.parse('awssfDeploy=Deploy(CORS not supported)');
-  mxResources.parse('awssfInvoke=Invoke(CORS not supported)');
+  mxResources.parse('awssfDeploy=Deploy...(CORS not supported)');
+  mxResources.parse('awssfDeployBtn=Deploy');
+  mxResources.parse('awssfInvoke=Invoke...(CORS not supported)');
 
   //override editData...
 	ui.actions.addAction('editData...', function()
@@ -1705,6 +1707,7 @@ Draw.loadPlugin(function(ui) {
       if (cell.getAttribute("timeout_seconds") == null) cell.setAttribute("timeout_seconds", "");
       if (cell.getAttribute("version") == null) cell.setAttribute("version", "");
       if (cell.getAttribute("role_arn") == null) cell.setAttribute("role_arn", "");
+      if (cell.getAttribute("state_machine_arn") == null) cell.setAttribute("state_machine_arn", "");
       cell.awssf = {};
     }
     return;
@@ -1762,8 +1765,9 @@ Draw.loadPlugin(function(ui) {
 
   ui.actions.addAction('awssfImportJSON', function()
   {
-    var dlg = new awssfImportDialog(ui, 'Insert from Text');
-    ui.showDialog(dlg.container, 620, 420, true, false);
+    var dlg = new awssfImportDialog(ui, 'Import Definition');
+    ui.showDialog(dlg.container, 700, 500, true, false);
+    dlg.container.parentNode.style.resize = 'both';
     dlg.init();
   });
 
@@ -1777,7 +1781,11 @@ Draw.loadPlugin(function(ui) {
       return false;
     }
     var awsconfig = codec.decode(found);
-    AWS.config.update({accessKeyId: awsconfig.getAttribute('accessKeyId'), secretAccessKey: awsconfig.getAttribute('secretAccessKey'), region: awsconfig.getAttribute('region')});
+    var params = {accessKeyId: awsconfig.getAttribute('accessKeyId'), secretAccessKey: awsconfig.getAttribute('secretAccessKey'), region: awsconfig.getAttribute('region')}
+    AWS.config.update(params);
+    if (__updateAWSconfig) {
+      __updateAWSconfig(params)
+    }
     return true;
   }
 
@@ -1815,21 +1823,6 @@ Draw.loadPlugin(function(ui) {
     // });
   }
 
-  function getStateMachineList(callback){
-    if (!setupAWSconfig()) return;
-    var list = [];
-    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-    stepfunctions.listStateMachines({}, function(err,data){
-      if (err) console.log(err, err.stack)
-      else{
-        for (var i of data.StateMachines) {
-          list.push(i)
-        }
-        callback(list)
-      }
-    })
-  }
-
   function isSupproted(){
     var sdk_supported = (typeof(AWS) == "object") && (typeof(AWS.StepFunctions) == "object");
     var cors_supported = false;
@@ -1839,19 +1832,11 @@ Draw.loadPlugin(function(ui) {
   ui.actions.addAction('awssfDeploy', function()
   {
     if (!setupAWSconfig()) return;
-    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-    getCallerIdentity(function(data){
-      var params = {
-        definition: JSON.stringify(getStepFunctionDefinition()),
-        name: ui.editor.graph.getModel().cells[0].getAttribute("name"),
-        roleArn: ui.editor.graph.getModel().cells[0].getAttribute("role_arn")
-      }; 
-      stepfunctions.createStateMachine(params, function(err, data) {
-        if (data) console.log(err, err.stack); // an error occurred
-        else     console.log(data);           // successful response
-      });    
-    });
-  }).isEnabled = isSupproted;
+    var dlg = new awssfDeployDialog(ui, 'Deploy StateMachine Definition');
+    ui.showDialog(dlg.container, 800, 600, true, false);
+    dlg.container.parentNode.style.resize = 'both';
+    dlg.init();
+  });
 
   ui.actions.addAction('awssfInvoke', function()
   {
@@ -1864,10 +1849,10 @@ Draw.loadPlugin(function(ui) {
 		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfImportJSON', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport', '-', 'awssfDeploy', 'awssfInvoke']);
 	});
 	
-	// Inserts voice menu before help menu
+	// Inserts StepFunctions menu before help menu
 	var menu = menu.parentNode.insertBefore(menu, menu.previousSibling.previousSibling.previousSibling);
 
-  var awssfImportDialog = function(editorUi, title, defaultType)
+  var awssfImportDialog = function(editorUi, title)
   {
     var graph = editorUi.editor.graph;
     var bounds = graph.getGraphBounds();
@@ -1995,7 +1980,6 @@ Draw.loadPlugin(function(ui) {
           edge.setAttribute('interval_seconds', body.Retry.IntervalSeconds || "");
           edge.setAttribute('max_attempts', body.Retry.MaxAttempts || "");
           edge.setAttribute('backoff_rate', body.Retry.BackoffRate || "");
-          // edge.setAttribute('weight', body.Retry.IntervalSeconds || "");
           res.push(edge)
         }
         if (body.Catch && body.Catch.length > 0) {
@@ -2003,7 +1987,7 @@ Draw.loadPlugin(function(ui) {
             var edge = CatchEdge.prototype.create('Catch');
             edge.source = vertexes[name];
             edge.setAttribute('error_equals', body.Catch[i].ErrorEquals || "");
-            //TODO: maybe weight control
+            edge.setAttribute('weight', body.Catch.length - i);
             edge.target = vertexes[body.Catch[i].Next];
             res.push(edge)
           }
@@ -2013,7 +1997,7 @@ Draw.loadPlugin(function(ui) {
             var edge = ChoiceEdge.prototype.create('Choice');
             edge.source = vertexes[name];
             edge.setAttribute('condition', awssfUtils.ruleToJSEP(body.Choices[i]));
-            //TODO: maybe weight control
+            edge.setAttribute('weight', body.Choices.length - i);
             edge.target = vertexes[body.Choices[i].Next];
             res.push(edge)
           }
@@ -2023,7 +2007,6 @@ Draw.loadPlugin(function(ui) {
             var _sp = vertexes[name].getChildAt(0);
             var tmp = recurseEdges(body.Branches[branch], vertexes, _sp);
             tmp.map(v => vertexes[name].insert(v))
-            // res.push(...tmp)
           }
         }
       }
@@ -2089,28 +2072,52 @@ Draw.loadPlugin(function(ui) {
       root.setAttribute("version", json.Version || "");
     }
     var div = document.createElement('div');
-    div.style.textAlign = 'right';
-    if (isSupproted()) {
+    var h3 = document.createElement('h2');
+    mxUtils.write(h3, title);
+    h3.style.marginTop = '0px';
+    h3.style.marginBottom = '24px';
+    div.appendChild(h3);
+
+    var form = new mxForm('properties');
+    form.table.style.width = '100%';
+    form.table.style.paddingRight = '20px';
+    var colgroupName = document.createElement('colgroup');
+    colgroupName.width = '120';
+    form.table.insertBefore(colgroupName, form.body);
+    var colgroupValue = document.createElement('colgroup');
+    form.table.insertBefore(colgroupValue, form.body);
+
+    var defaultValue = '';
+    var textarea = form.addTextarea('Definition:', defaultValue, 30)
+    textarea.style.width = '100%';
+    textarea.style.marginBottom = '16px';
+ 
+    if (__listStateMachines && __describeStateMachine && __updateAWSconfig && setupAWSconfig()) {
       var select = document.createElement('select');
-      getStateMachineList(function(list){
-        for (var j in list){
+      __listStateMachines().then(function(data) {
+        for (var j in data.stateMachines){
           var option = document.createElement('option');
-          mxUtils.writeln(option, options[j].name);
-          option.setAttribute('value', options[j].stateMachineArn);
+          mxUtils.writeln(option, data.stateMachines[j].name);
+          option.setAttribute('value', data.stateMachines[j].stateMachineArn);
           select.appendChild(option);
         }
       });
-      div.appendChild(select);
+      form.addField('StateMachine:', select)
+      mxEvent.addListener(select, 'change', function()
+      {
+        __describeStateMachine(select.value).then(function(newData) {
+          if (textarea.value.length == 0 || textarea.value == defaultValue)
+          {
+            defaultValue = newData.definition;
+            textarea.value = defaultValue;
+          }
+        });
+      });
     }
-    var textarea = document.createElement('textarea');
-    textarea.style.resize = 'none';
-    textarea.style.width = '100%';
-    textarea.style.height = '354px';
-    textarea.style.marginBottom = '16px';
-
-    var defaultValue = ''; //getDefaultValue();
-    textarea.value = defaultValue;
-    div.appendChild(textarea);
+    div.appendChild(form.table);
+    var buttons = document.createElement('div');
+    buttons.style.marginTop = '18px';
+    buttons.style.textAlign = 'right';
     this.init = function()
     {
       textarea.focus();
@@ -2134,22 +2141,156 @@ Draw.loadPlugin(function(ui) {
     
     if (editorUi.editor.cancelFirst)
     {
-      div.appendChild(cancelBtn);
+      buttons.appendChild(cancelBtn);
     }
     
-    var okBtn = mxUtils.button(mxResources.get('import'), function()
+    var okBtn = mxUtils.button(mxResources.get('awssfImportBtn'), function()
     {
       editorUi.hideDialog();
       parse(textarea.value);
     });
-    div.appendChild(okBtn);
+    buttons.appendChild(okBtn);
     
     okBtn.className = 'geBtn gePrimaryBtn';
     
     if (!editorUi.editor.cancelFirst)
     {
-      div.appendChild(cancelBtn);
+      buttons.appendChild(cancelBtn);
     }
+    div.appendChild(buttons)
+    this.container = div;
+  }
+
+  var awssfDeployDialog = function(editorUi, title)
+  {
+    var graph = editorUi.editor.graph;
+    var params = {
+      definition: JSON.stringify(getStepFunctionDefinition()),
+      name: graph.getModel().cells[0].getAttribute("name") || "",
+      roleArn: graph.getModel().cells[0].getAttribute("role_arn") || "",
+      stateMachineArn: graph.getModel().cells[0].getAttribute("state_machine_arn") || ""
+    };
+
+    var div = document.createElement('div');
+
+    var h3 = document.createElement('h2');
+    mxUtils.write(h3, title);
+    h3.style.marginTop = '0px';
+    h3.style.marginBottom = '24px';
+    div.appendChild(h3);
+
+    var form = new mxForm('properties');
+    form.table.style.width = '100%';
+    form.table.style.paddingRight = '20px';
+    var colgroupName = document.createElement('colgroup');
+    colgroupName.width = '120';
+    form.table.insertBefore(colgroupName, form.body);
+    var colgroupValue = document.createElement('colgroup');
+    form.table.insertBefore(colgroupValue, form.body);
+
+    var select = document.createElement('select');
+    var defaultOption = document.createElement('option');
+    mxUtils.writeln(defaultOption, 'Create a new statemachine');
+    defaultOption.setAttribute('selected', true);
+    select.appendChild(defaultOption);
+    defaultOption.setAttribute('value', '__CREATE__');
+    __listStateMachines().then(function(data) {
+      for (var j in data.stateMachines){
+        var option = document.createElement('option');
+        mxUtils.writeln(option, data.stateMachines[j].name);
+        option.setAttribute('value', data.stateMachines[j].stateMachineArn);
+        if (params.stateMachineArn == data.stateMachines[j].stateMachineArn){
+          option.setAttribute('selected', true);
+        }
+        select.appendChild(option);
+      }
+    });
+    form.addField('StateMachine:', select)
+
+    mxEvent.addListener(select, 'change', function()
+    {
+      __describeStateMachine(select.value).then(function(data) {
+        if (textarea.value.length == 0 || textarea.value == defaultValue)
+        {
+          arnInput.value = data.stateMachineArn
+          nameInput.value = data.name
+          roleInput.value = data.roleArn
+        }
+      });
+    });
+
+    var arnInput = form.addText('StaeMachineArn:', params.stateMachineArn);
+    arnInput.style.width = '100%';
+
+    var nameInput = form.addText('Name:', params.name);
+    nameInput.style.width = '100%';
+
+    var roleInput = form.addText('Role:', params.roleArn)
+    roleInput.style.width = '100%';
+
+    var defaultValue = params.definition;
+    var textarea = form.addTextarea('Definition:', defaultValue, 30)
+    textarea.style.width = '100%';
+
+    div.appendChild(form.table);
+    var buttons = document.createElement('div');
+    buttons.style.marginTop = '18px';
+    buttons.style.textAlign = 'right';
+
+    this.init = function()
+    {
+      nameInput.focus();
+    };
+    var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
+    {
+      if (textarea.value == defaultValue)
+      {
+        editorUi.hideDialog();
+      }
+      else
+      {
+        editorUi.confirm(mxResources.get('areYouSure'), function()
+        {
+          editorUi.hideDialog();
+        });
+      }
+    });
+    
+    cancelBtn.className = 'geBtn';
+    
+    if (editorUi.editor.cancelFirst)
+    {
+      buttons.appendChild(cancelBtn);
+    }
+    
+    var okBtn = mxUtils.button(mxResources.get('awssfDeployBtn'), function()
+    {
+      var params = {
+        name: nameInput.value,
+        definition: textarea.value,
+        roleArn: roleInput.value
+      }
+      if (select.value !== '__CREATE__') {
+        params.stateMachineArn = arnInput.value
+        delete params.name
+        if (!params.roleArn) delete params.roleArn
+        if (!params.definition) delete params.definition
+      }
+      __deployStateMachine(params).then(() => {
+        editorUi.hideDialog();
+      }).catch(err => {
+        alert(err.message)
+      })
+    });
+    buttons.appendChild(okBtn);
+    
+    okBtn.className = 'geBtn gePrimaryBtn';
+    
+    if (!editorUi.editor.cancelFirst)
+    {
+      buttons.appendChild(cancelBtn);
+    }
+    div.appendChild(buttons)
     this.container = div;
   }
 });
