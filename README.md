@@ -1,8 +1,8 @@
 # AWS Step Functions Workflow Designer
 
-## About
- You can make a AWS step functions workflow with GUI on the browser and export JSON.
- You can import JSON of AWS step functions workflow and update it.
+## About this
+- You can make a AWS step functions workflow with GUI on the browser and export JSON.
+- [v0.4.0-] You can import workflow definition JSON/YAML and update it with GUI.
 
  This is a AWS Step Functions plugin for [draw.io](https://github.com/jgraph/draw.io).
 
@@ -14,8 +14,7 @@
 1. Select Save Option (ex. Decide Later...)
 1. Select Menu [Extras]-[Plugins]
 1. Click [Add]
-1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.3.1/aws-step-functions.js  
-   Develop version: https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.0-beta2/aws-step-functions.js
+1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.0/aws-step-functions.js
 1. [Apply]
 1. Reload the page
 
