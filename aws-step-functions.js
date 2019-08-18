@@ -1787,20 +1787,20 @@ Draw.loadPlugin(function(ui) {
   ui.actions.addAction('awssfExportJSON', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(JSON.stringify(data, null, "  "), true);
+    popup("Export as JSON", JSON.stringify(data, null, "  "));
   });
 
   ui.actions.addAction('awssfExportYAML', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(jsyaml.dump(data), true);
+    popup("Export as YAML", jsyaml.dump(data));
   });
 
   ui.actions.addAction('awssfExport', function()
   {
     var encoder = new mxCodec();
     var node = encoder.encode(ui.editor.graph.getModel());
-    mxUtils.popup(mxUtils.getPrettyXml(node), true);
+    popup("Export as XML for draw.io", mxUtils.getPrettyXml(node));
   });
 
   ui.actions.addAction('awssfImport', function()
@@ -1887,7 +1887,6 @@ Draw.loadPlugin(function(ui) {
   var awssfImportDialog = function(editorUi, title)
   {
     var graph = editorUi.editor.graph;
-    var bounds = graph.getGraphBounds();
 
     function recurseStates(states){
       var res = {hash: {}, list: []};
@@ -2056,19 +2055,24 @@ Draw.loadPlugin(function(ui) {
     var form = new mxForm('properties');
     form.table.style.width = '100%';
     form.table.style.paddingRight = '20px';
-    var colgroupName = document.createElement('colgroup');
-    colgroupName.width = '0';
-    form.table.insertBefore(colgroupName, form.body);
-    var colgroupValue = document.createElement('colgroup');
-    form.table.insertBefore(colgroupValue, form.body);
-
     var defaultValue = '';
     var textarea = form.addTextarea('', defaultValue, 25)
     textarea.style.width = '100%';
     textarea.style.marginBottom = '16px';
+    div.appendChild(form.table);
 
+    var form2 = new mxForm('properties');
+    form2.table.style.width = '100%';
+    form2.table.style.paddingRight = '20px';
+    var colgroupName = document.createElement('colgroup');
+    colgroupName.width = '120';
+    form2.table.insertBefore(colgroupName, form2.body);
+    var colgroupValue = document.createElement('colgroup');
+    form2.table.insertBefore(colgroupValue, form2.body);
+
+    var select = document.createElement('select');
+    form2.addField('StateMachine:', select)
     if (awssfUtils.inCarlo() && setupAWSconfig()) {
-      var select = document.createElement('select');
       __listStateMachines().then(function(data) {
         for (var j in data.stateMachines){
           var option = document.createElement('option');
@@ -2077,7 +2081,6 @@ Draw.loadPlugin(function(ui) {
           select.appendChild(option);
         }
       });
-      form.addField('StateMachine:', select)
       mxEvent.addListener(select, 'change', function()
       {
         __describeStateMachine(select.value).then(function(newData) {
@@ -2088,8 +2091,13 @@ Draw.loadPlugin(function(ui) {
           }
         });
       });
+    } else {
+      var option = document.createElement('option');
+      mxUtils.writeln(option, 'Select a StateMachine...');
+      select.appendChild(option);
+      select.disabled = true
     }
-    div.appendChild(form.table);
+    div.appendChild(form2.table);
     var buttons = document.createElement('div');
     buttons.style.marginTop = '18px';
     buttons.style.textAlign = 'right';
@@ -2272,5 +2280,56 @@ Draw.loadPlugin(function(ui) {
     }
     div.appendChild(buttons)
     this.container = div;
+  }
+
+  var awssfExportDialog = function(editorUi, title, value) {
+    var div = document.createElement('div');
+
+    var h3 = document.createElement('h2');
+    mxUtils.write(h3, title);
+    h3.style.marginTop = '0px';
+    h3.style.marginBottom = '24px';
+    div.appendChild(h3);
+    var form = new mxForm('properties');
+    form.table.style.width = '100%';
+    form.table.style.paddingRight = '20px';
+    var textarea = form.addTextarea('', value, 25)
+    textarea.style.width = '100%';
+    textarea.style.marginBottom = '16px';
+    textarea.readOnly = true;
+    div.appendChild(form.table);
+    var buttons = document.createElement('div');
+    buttons.style.marginTop = '18px';
+    buttons.style.textAlign = 'right';
+    this.init = function() {
+      textarea.focus();
+      textarea.scrollTop = 0;
+    };
+    var copyBtn = mxUtils.button(mxResources.get('copy'), function() {
+      const range = document.createRange()
+      range.selectNode(textarea)
+      const selection = document.getSelection()
+      selection.removeAllRanges()
+      selection.addRange(range)
+      document.execCommand('copy')
+      range.detach();
+    });
+    copyBtn.className = 'geBtn gePrimaryBtn';
+    buttons.appendChild(copyBtn);
+
+    var cancelBtn = mxUtils.button(mxResources.get('close'), function() {
+      editorUi.hideDialog();
+    });
+    cancelBtn.className = 'geBtn';
+    buttons.appendChild(cancelBtn);
+    div.appendChild(buttons)
+    this.container = div;
+  }
+
+  function popup(title, src) {
+    var dlg = new awssfExportDialog(ui, title, src);
+    ui.showDialog(dlg.container, 700, 500, true, false);
+    dlg.container.parentNode.style.resize = 'both';
+    dlg.init();
   }
 });
