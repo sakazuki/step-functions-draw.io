@@ -3,7 +3,7 @@ mxscript("https://cdn.rawgit.com/nodeca/js-yaml/9c1894e2/dist/js-yaml.min.js");
 mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.510.0.min.js");
 // mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
 // mxscript("https://f248fda6.ngrok.io/aws-sdk-2.510.0.js");
-//mxscript("https://localhost:8000/js/jsep.min.js");
+// mxscript("https://localhost:8000/js/jsep.min.js");
 
 Draw.loadPlugin(function(ui) {
   var awssfUtils = {
@@ -177,7 +177,7 @@ Draw.loadPlugin(function(ui) {
           Variable: varname
         };
         tmp[vartype + this.ops[obj.operator]] = val;
-        Object.assign(res, tmp);        
+        Object.assign(res, tmp);
       }
       return res;
     },
@@ -211,7 +211,7 @@ Draw.loadPlugin(function(ui) {
     adjustJsonPath: function(val){
       return (val === "null") ? null : val
     },
-    isCarlo() {
+    inCarlo() {
       return (typeof __updateAWSconfig !== "undefined") &&
         (typeof __describeStateMachine !== "undefined") &&
         (typeof __listStateMachines !== "undefined") &&
@@ -384,8 +384,8 @@ Draw.loadPlugin(function(ui) {
     var cell = new mxCell('AWSconfig', new mxGeometry(0, 0, 70, 46), 'dashed=0;html=1;shape=mxgraph.aws2.non-service_specific.cloud;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;');
     cell.vertex = true;
     cell.value = mxUtils.createXmlDocument().createElement('object');
-    cell.setAttribute('label', 'config');  
-    cell.setAttribute('type', 'awssfAWSconfig');  
+    cell.setAttribute('label', 'config');
+    cell.setAttribute('type', 'awssfAWSconfig');
     cell.setAttribute('accessKeyId', '');
     cell.setAttribute('secretAccessKey', '');
     cell.setAttribute('region', '');
@@ -441,7 +441,7 @@ Draw.loadPlugin(function(ui) {
   }
   PassState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Pass"
     };
@@ -461,7 +461,7 @@ Draw.loadPlugin(function(ui) {
       if (edge.source != cell) continue;
       if (awssfUtils.isNext(edge)){
         exist_next_edge = true;
-        Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
+        Object.assign(data[label], edge.awssf.expJSON(edge, cells))
       }
     }
     if (exist_next_edge == false || data[label].Next == 'End'){
@@ -498,7 +498,7 @@ Draw.loadPlugin(function(ui) {
       var edge = src.edges[i];
       if ((edge.source == src) && awssfUtils.isNext(edge))
         return CatchEdge.prototype.create();
-    }  
+    }
     return NextEdge.prototype.create();
   }
   TaskState.prototype.validate = function(cell, res){
@@ -523,7 +523,7 @@ Draw.loadPlugin(function(ui) {
   };
   TaskState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Task",
       Resource: cell.getAttribute("resource")
@@ -549,7 +549,7 @@ Draw.loadPlugin(function(ui) {
         if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
         if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
         return 0;
-      });    
+      });
       for(var i in sorted_edges){
         var edge = sorted_edges[i];
         if (edge.source != cell) continue;
@@ -563,7 +563,7 @@ Draw.loadPlugin(function(ui) {
             data[label]["Catch"].push(edge.awssf.expJSON(edge, cells));
           }else if (awssfUtils.isNext(edge)){
             exist_next_edge = true;
-            Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
+            Object.assign(data[label], edge.awssf.expJSON(edge, cells))
           }
         }
       }
@@ -610,7 +610,7 @@ Draw.loadPlugin(function(ui) {
   };
   ChoiceState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Choice",
       Choices: []
@@ -656,7 +656,7 @@ Draw.loadPlugin(function(ui) {
   WaitState.prototype.create = function(label, json){
     if (!json) json = {};
     var style = 'shape=mxgraph.flowchart.delay;whiteSpace=wrap;gradientColor=none;html=1;';
-    var cell = createState(this, label, style, json);  
+    var cell = createState(this, label, style, json);
     var found = false;
     var options = WaitState.prototype.cst.DURATION_FORMAT;
     for(var j in options){
@@ -669,7 +669,7 @@ Draw.loadPlugin(function(ui) {
       }
     }
     if (!found) cell.setAttribute('seconds', '');
-    return cell; 
+    return cell;
   }
   WaitState.prototype.create_default_edge = function(src){
     for (var i in src.edges){
@@ -703,7 +703,7 @@ Draw.loadPlugin(function(ui) {
   };
   WaitState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Wait"
     };
@@ -732,7 +732,7 @@ Draw.loadPlugin(function(ui) {
       if (edge.source != cell) continue;
       if (awssfUtils.isNext(edge)){
         exist_next_edge = true;
-        Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
+        Object.assign(data[label], edge.awssf.expJSON(edge, cells))
       }
     }
     if (exist_next_edge == false || data[label].Next == 'End'){
@@ -829,10 +829,10 @@ Draw.loadPlugin(function(ui) {
       res.push("A Succeed state MUST have no outgoing edge")
     }
     return awssfUtils.validateCommonAttributes(cell, res, false);
-  };  
+  };
   SucceedState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Succeed"
     }
@@ -856,8 +856,8 @@ Draw.loadPlugin(function(ui) {
     cell.setAttribute('error', json.Error || '');
     cell.setAttribute('cause', json.Cause || '');
     cell.value.removeAttribute('input_path');
-    cell.value.removeAttribute('output_path');  
-    return cell;  
+    cell.value.removeAttribute('output_path');
+    return cell;
   };
   FailState.prototype.validate = function(cell, res){
     if (!res) res = [];
@@ -875,7 +875,7 @@ Draw.loadPlugin(function(ui) {
   };
   FailState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Fail",
       Error: cell.getAttribute("error"),
@@ -905,7 +905,7 @@ Draw.loadPlugin(function(ui) {
       task1.setGeometry(new mxGeometry(80, 80, task1.geometry.width, task1.geometry.height));
       cell.insert(task1);
       var edge1 = StartAtEdge.prototype.create('StartAt', sp, task1);
-      cell.insert(edge1);  
+      cell.insert(edge1);
       var task2 = TaskState.prototype.create();
       task2.setGeometry(new mxGeometry(320, 80, task2.geometry.width, task2.geometry.height));
       cell.insert(task2);
@@ -928,7 +928,7 @@ Draw.loadPlugin(function(ui) {
   };
   ParallelState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Parallel",
       Branches: []
@@ -941,7 +941,7 @@ Draw.loadPlugin(function(ui) {
       data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
     if (cell.getAttribute("result_path"))
       data[label].ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
-    
+
     var startat = [];
     for(var i in cell.children){
       var child = cell.children[i];
@@ -952,7 +952,7 @@ Draw.loadPlugin(function(ui) {
         if (awssfUtils.isStartAt(edge)){
           startat.push(cells[edge.target.id]);
         }
-      }      
+      }
     }
 
     function traceAll(state, res){
@@ -1023,7 +1023,7 @@ Draw.loadPlugin(function(ui) {
     this.custom = function(){
       this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
       this.domNode.appendChild(CatchEdge.prototype.createHandlerImage.apply(this, arguments));
-      this.domNode.appendChild(RetryEdge.prototype.createHandlerImage.apply(this, arguments));  
+      this.domNode.appendChild(RetryEdge.prototype.createHandlerImage.apply(this, arguments));
     };
     awssfStateHandler.apply(this, arguments);
   }
@@ -1039,7 +1039,7 @@ Draw.loadPlugin(function(ui) {
     cell.value = mxUtils.createXmlDocument().createElement('object');
     cell.setAttribute('label', label);
     cell.setAttribute('type', 'awssf' + awssf.type);
-    cell.awssf = awssf;  
+    cell.awssf = awssf;
     if (source && target) {
       cell.source = source;
       cell.target = target;
@@ -1078,7 +1078,7 @@ Draw.loadPlugin(function(ui) {
   var NextEdge = function(){};
   NextEdge.prototype.type = 'Next';
   NextEdge.prototype.create = function(label, source, target){
-    if (label == null ) label = this.type;  
+    if (label == null ) label = this.type;
     var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target);
     return cell;
   };
@@ -1112,7 +1112,7 @@ Draw.loadPlugin(function(ui) {
   RetryEdge.prototype.create = function(label, source, json, weight){
     if (label == null ) label = this.type;
     if (!json) json = {ErrorEquals: '', InterValSeconds: 1, MaxAttempts: 3, BackoffRate: 2}
-    var cell = createEdge(this, label, 'edgeStyle=orthogonalEdgeStyle;curved=1;html=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;startArrow=none;startFill=0;jettySize=auto;orthogonalLoop=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, source);  
+    var cell = createEdge(this, label, 'edgeStyle=orthogonalEdgeStyle;curved=1;html=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;startArrow=none;startFill=0;jettySize=auto;orthogonalLoop=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, source);
     cell.geometry.setTerminalPoint(new mxPoint(0, cell.geometry.height), true);
     cell.geometry.setTerminalPoint(new mxPoint(cell.geometry.width, 0), false);
     // cell.setAttribute('label', '%error_equals%');
@@ -1190,7 +1190,7 @@ Draw.loadPlugin(function(ui) {
   };
   CatchEdge.prototype.expJSON = function(cell, cells){
     var errors = cell.getAttribute("error_equals");
-    errors = errors ? errors.split(/,\s*/) : [];    
+    errors = errors ? errors.split(/,\s*/) : [];
     if (cell.target != null){
       var data = {
         ErrorEquals: errors,
@@ -1201,7 +1201,7 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
-  CatchEdge.prototype.createHandlerImage = function(){ 
+  CatchEdge.prototype.createHandlerImage = function(){
       var img = awssfUtils.createHandlerImage.call(this, CatchEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
     return img;
   };
@@ -1215,7 +1215,7 @@ Draw.loadPlugin(function(ui) {
     if (!json) json = {}
     var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target);
     // cell.setAttribute('label', '%condition%');
-    cell.setAttribute('placeholders', 1);  
+    cell.setAttribute('placeholders', 1);
     cell.setAttribute('condition', awssfUtils.ruleToJSEP(json) || '$.foo == 1');
     cell.setAttribute('weight', weight || '1');
     return cell;
@@ -1251,7 +1251,7 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
-  ChoiceEdge.prototype.createHandlerImage = function(){ 
+  ChoiceEdge.prototype.createHandlerImage = function(){
     var img = awssfUtils.createHandlerImage.call(this, ChoiceEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACWUlEQVRIS7WVXW/SUBjH/12AGZDSDkkwQ40mytCxmC1z6Fx82RUXiiYz8WvMO/0AXrqPoYkandF4t+iWuSXTRMkcu1OUKbFAAWFCy1ZzaoCe9oDUl3PV5pzzO8/L/3keTtM0DV1WsdpAVlaRLSoICi4ERScEj6PbldYex4LX1F08fyNjM7MN8m1ee5x9GAq5ER8TQb47LQs8ldnG49U8E8p65ErMj0jIzeRT8EerObz9UO3JZeOhWNiL+OiA5V4LTiy+tyTZBjcvXJ8KWDzQ4SSuc/NbllCMHtmLWJhHwOdEHwc0djSkpToWkkVk8nXKEBL72cQglQMdzgrH9Iiggwnk5XoJXwp1/f90mMf3Hzu4vyxBKqvUAycPe3A1to9Wy+0Hn1BX24oM+ftxbTKAQkXF3cVvUBrtvYtRARNhL1Y2y3ixXrJYf3PmQBsuV1Rt7skWdejcsA9nhngsvi9hOVW2lYfZy4OtOuA2Plc1cyITp/w4cciDZ2t5vPtoTz3GxHILSVkzu3dp3I8ogb+2Dz8/7MOFqKB7y7R8MsJj6rgPSxvWsLgcnL6XK6tMryjLWTHvltCJY15Mj4hIpit4ulaw5IOKOZGiWS3khlGKr1JlpKVaS4o1ZRcPV3IWrfc7OdyaOUhLsVPZn43wGD/qBe92/LaICJGpc1Khd+YzlNZt6Q8AsfpGImStUAL6b72laeWfdkWj/IweM/s5ecTYDjqFiISC9JKe+nkT8msSFfRQsR4hUAKMjw3Ym0RmK8kM/SoryMoKgqIL+0XX381Qu0rpeYb+KzDh/AQ2ZmDL5ziOTgAAAABJRU5ErkJggg==');
     return img;
   };
@@ -1259,9 +1259,9 @@ Draw.loadPlugin(function(ui) {
   registCodec(ChoiceEdge);
 
   var DefaultEdge = function DefaultEdge(){};
-  DefaultEdge.prototype.type = 'Default';  
+  DefaultEdge.prototype.type = 'Default';
   DefaultEdge.prototype.create = function(label, source, target){
-    if (label == null ) label = this.type;  
+    if (label == null ) label = this.type;
     var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target);
     return cell;
   };
@@ -1409,9 +1409,9 @@ Draw.loadPlugin(function(ui) {
 
     div.style.height = '100%'; //'310px';
     div.style.overflow = 'auto';
-    
+
     var value = graph.getModel().getValue(cell);
-    
+
     // Converts the value to an XML node
     if (!mxUtils.isNode(value))
     {
@@ -1429,12 +1429,12 @@ Draw.loadPlugin(function(ui) {
     form.table.insertBefore(colgroupName, form.body);
     var colgroupValue = document.createElement('colgroup');
     form.table.insertBefore(colgroupValue, form.body);
-    
+
     var attrs = value.attributes;
     var names = [];
     var texts = [];
     var count = 0;
-    
+
     var addTextArea = function(index, name, value)
     {
       names[index] = name;
@@ -1523,7 +1523,7 @@ Draw.loadPlugin(function(ui) {
         count++;
       }
     }
-    
+
     div.appendChild(form.table);
 
     this.init = function()
@@ -1537,23 +1537,23 @@ Draw.loadPlugin(function(ui) {
         nameInput.focus();
       }
     };
-    
+
     var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
     {
       ui.hideDialog.apply(ui, arguments);
     });
     cancelBtn.className = 'geBtn';
-    
+
     var applyBtn = mxUtils.button(mxResources.get('apply'), function()
     {
       try
       {
         ui.hideDialog.apply(ui, arguments);
-        
+
         // Clones and updates the value
         value = value.cloneNode(true);
         var removeLabel = false;
-        
+
         for (var i = 0; i < names.length; i++)
         {
           if (cell.awssf && cell.awssf.applyForm){
@@ -1571,13 +1571,13 @@ Draw.loadPlugin(function(ui) {
             }
           }
         }
-        
+
         // Removes label if placeholder is assigned
         if (removeLabel)
         {
           value.removeAttribute('label');
         }
-        
+
         // Updates the value of the cell (undoable)
         graph.getModel().setValue(cell, value);
       }
@@ -1587,11 +1587,11 @@ Draw.loadPlugin(function(ui) {
       }
     });
     applyBtn.className = 'geBtn gePrimaryBtn';
-    
+
     var buttons = document.createElement('div');
     buttons.style.marginTop = '18px';
     buttons.style.textAlign = 'right';
-    
+
     if (graph.getModel().isVertex(cell) || graph.getModel().isEdge(cell))
     {
       var replace = document.createElement('span');
@@ -1599,13 +1599,13 @@ Draw.loadPlugin(function(ui) {
       var input = document.createElement('input');
       input.setAttribute('type', 'checkbox');
       input.style.marginRight = '6px';
-      
+
       if (value.getAttribute('placeholders') == '1')
       {
         input.setAttribute('checked', 'checked');
         input.defaultChecked = true;
       }
-    
+
       mxEvent.addListener(input, 'click', function()
       {
         if (value.getAttribute('placeholders') == '1')
@@ -1617,10 +1617,10 @@ Draw.loadPlugin(function(ui) {
           value.setAttribute('placeholders', '1');
         }
       });
-      
+
       replace.appendChild(input);
       mxUtils.write(replace, mxResources.get('placeholders'));
-      
+
       if (EditDataDialog.placeholderHelpLink != null)
       {
         var link = document.createElement('a');
@@ -1629,20 +1629,20 @@ Draw.loadPlugin(function(ui) {
         link.setAttribute('target', '_blank');
         link.style.marginLeft = '10px';
         link.style.cursor = 'help';
-        
+
         var icon = document.createElement('img');
         icon.setAttribute('border', '0');
         icon.setAttribute('valign', 'middle');
         icon.style.marginTop = '-4px';
         icon.setAttribute('src', Editor.helpImage);
         link.appendChild(icon);
-        
+
         replace.appendChild(link);
       }
-      
+
       buttons.appendChild(replace);
     }
-    
+
     if (ui.editor && ui.editor.cancelFirst)
     {
       buttons.appendChild(cancelBtn);
@@ -1655,34 +1655,33 @@ Draw.loadPlugin(function(ui) {
     }
 
     div.appendChild(buttons);
-    this.container = div;    
+    this.container = div;
   }
 
-	mxResources.parse('stepFunctions=StepFunctions');
-	mxResources.parse('awssfValidate=Validate');
-  mxResources.parse('awssfImportJSON=Import...');
+  mxResources.parse('stepFunctions=StepFunctions');
+  mxResources.parse('awssfValidate=Validate');
+  mxResources.parse('awssfImport=Import...');
   mxResources.parse('awssfImportBtn=Import');
-	mxResources.parse('awssfExportJSON=Export JSON');
-	mxResources.parse('awssfExportYAML=Export YAML');
+  mxResources.parse('awssfExportJSON=Export JSON');
+  mxResources.parse('awssfExportYAML=Export YAML');
   mxResources.parse('awssfExport=Export');
-	mxResources.parse('awssfLambda=Lambda');
-  mxResources.parse('awssfDeploy=Deploy...(CORS not supported)');
+  mxResources.parse('awssfLambda=Lambda');
+  mxResources.parse('awssfDeploy=Deploy...');
   mxResources.parse('awssfDeployBtn=Deploy');
-  mxResources.parse('awssfInvoke=Invoke...(CORS not supported)');
 
   //override editData...
-	ui.actions.addAction('editData...', function()
-	{
-		var cell = ui.editor.graph.getSelectionCell() || ui.editor.graph.getModel().getRoot();
-		
-		if (cell != null)
-		{
-			var dlg = new EditDataDialog(ui, cell);
-			ui.showDialog(dlg.container, 600, 320, true, false);
+  ui.actions.addAction('editData...', function()
+  {
+    var cell = ui.editor.graph.getSelectionCell() || ui.editor.graph.getModel().getRoot();
+
+    if (cell != null)
+    {
+      var dlg = new EditDataDialog(ui, cell);
+      ui.showDialog(dlg.container, 600, 320, true, false);
       dlg.container.parentNode.style.resize = 'both';
-			dlg.init();
-		}
-	}, null, null, 'Ctrl+M');
+      dlg.init();
+    }
+  }, null, null, 'Ctrl+M');
 
   ui.actions.addAction('awssfValidate', function()
   {
@@ -1741,7 +1740,7 @@ Draw.loadPlugin(function(ui) {
     if (!ui.editor.graph.getModel().cells) return;
     var cell = ui.editor.graph.getModel().getRoot();
     if (cell && (cell.value == null)){
-      cell.value = mxUtils.createXmlDocument().createElement('object');    
+      cell.value = mxUtils.createXmlDocument().createElement('object');
       if (cell.getAttribute("type") == null) cell.setAttribute("type", "awssfRoot");
       if (cell.getAttribute("name") == null) cell.setAttribute("name", "");
       if (cell.getAttribute("comment") == null) cell.setAttribute("comment", "");
@@ -1788,23 +1787,23 @@ Draw.loadPlugin(function(ui) {
   ui.actions.addAction('awssfExportJSON', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(JSON.stringify(data, null, "  "), true);
+    popup("Export as JSON", JSON.stringify(data, null, "  "));
   });
 
   ui.actions.addAction('awssfExportYAML', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(jsyaml.dump(data), true);
+    popup("Export as YAML", jsyaml.dump(data));
   });
 
   ui.actions.addAction('awssfExport', function()
   {
     var encoder = new mxCodec();
     var node = encoder.encode(ui.editor.graph.getModel());
-    mxUtils.popup(mxUtils.getPrettyXml(node), true);
+    popup("Export as XML for draw.io", mxUtils.getPrettyXml(node));
   });
 
-  ui.actions.addAction('awssfImportJSON', function()
+  ui.actions.addAction('awssfImport', function()
   {
     var dlg = new awssfImportDialog(ui, 'Import Definition');
     ui.showDialog(dlg.container, 700, 500, true, false);
@@ -1834,8 +1833,8 @@ Draw.loadPlugin(function(ui) {
     var sts = new AWS.STS({apiVersion: '2011-06-15'});
     sts.getCallerIdentity({}, function(err, data) {
       if (err) console.log(err, err.stack); // an error occurred
-      else callback(data); 
-    });    
+      else callback(data);
+    });
   }
 
   function getResourceList(callback){
@@ -1865,40 +1864,29 @@ Draw.loadPlugin(function(ui) {
   }
 
   function isSupproted(){
-    var sdk_supported = (typeof(AWS) == "object") && (typeof(AWS.StepFunctions) == "object");
-    var cors_supported = false;
-    return sdk_supported && cors_supported;
+    return awssfUtils.inCarlo();
   }
 
   ui.actions.addAction('awssfDeploy', function()
   {
-    if (!(awssfUtils.isCarlo() && setupAWSconfig())) return;
+    if (!(awssfUtils.inCarlo() && setupAWSconfig())) return;
     var dlg = new awssfDeployDialog(ui, 'Deploy StateMachine Definition');
     ui.showDialog(dlg.container, 800, 600, true, false);
     dlg.container.parentNode.style.resize = 'both';
     dlg.init();
+  }).isEnabled = isSupproted;
+
+  var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
+  {
+    ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfImport', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport', '-', 'awssfDeploy']);
   });
 
-  ui.actions.addAction('awssfInvoke', function()
-  {
-    if (!setupAWSconfig()) return;
-    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-  }).isEnabled = isSupproted;  
-
-	var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
-	{
-		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfImportJSON', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport', '-', 'awssfDeploy', 'awssfInvoke']);
-	});
-	
-	// Inserts StepFunctions menu before help menu
-	var menu = menu.parentNode.insertBefore(menu, menu.previousSibling.previousSibling.previousSibling);
+  // Inserts StepFunctions menu before help menu
+  var menu = menu.parentNode.insertBefore(menu, menu.previousSibling.previousSibling.previousSibling);
 
   var awssfImportDialog = function(editorUi, title)
   {
     var graph = editorUi.editor.graph;
-    var bounds = graph.getGraphBounds();
-    var dx = bounds.x / 2;
-    var dy = 80;
 
     function recurseStates(states){
       var res = {hash: {}, list: []};
@@ -1907,7 +1895,6 @@ Draw.loadPlugin(function(ui) {
         var body = states[name]
         if (body.Type === "Pass") {
           cell = PassState.prototype.create(name, body);
-          // cell.setGeometry(new mxGeometry(dx, dy * res.list.length, cell.geometry.width, cell.geometry.height));
         } else if (body.Type === "Task") {
           cell = TaskState.prototype.create(name, body);
         } else if (body.Type === "Choice") {
@@ -1987,7 +1974,16 @@ Draw.loadPlugin(function(ui) {
 
     function parse(text)
     {
-      var json = JSON.parse(text.trim());
+      var json;
+      if (text[0] === '{') {
+        json = JSON.parse(text.trim());
+      } else {
+        json = jsyaml.load(text.trim());
+      }
+      var root = graph.getModel().getRoot();
+      root.setAttribute("comment", json.Comment || "");
+      root.setAttribute("timeout_seconds", json.TimeoutSeconds || "");
+      root.setAttribute("version", json.Version || "");
       var res = recurseStates(json.States);
       var inserted = res.list;
       var vertexes = res.hash;
@@ -1997,10 +1993,6 @@ Draw.loadPlugin(function(ui) {
       inserted.push(ep)
       var tmp = recurseEdges(json, vertexes, sp, ep);
       inserted.push(...tmp);
-      var root = graph.getModel().getRoot();
-      root.setAttribute("comment", json.Comment || "");
-      root.setAttribute("timeout_seconds", json.TimeoutSeconds || "");
-      root.setAttribute("version", json.Version || "");
       graph.getModel().beginUpdate();
       try
       {
@@ -2056,23 +2048,31 @@ Draw.loadPlugin(function(ui) {
     h3.style.marginTop = '0px';
     h3.style.marginBottom = '24px';
     div.appendChild(h3);
+    var span = document.createElement('span');
+    mxUtils.write(span, 'Paste statemachine definition JSON or YAML');
+    div.appendChild(span);
 
     var form = new mxForm('properties');
     form.table.style.width = '100%';
     form.table.style.paddingRight = '20px';
-    var colgroupName = document.createElement('colgroup');
-    colgroupName.width = '120';
-    form.table.insertBefore(colgroupName, form.body);
-    var colgroupValue = document.createElement('colgroup');
-    form.table.insertBefore(colgroupValue, form.body);
-
     var defaultValue = '';
-    var textarea = form.addTextarea('Definition:', defaultValue, 30)
+    var textarea = form.addTextarea('', defaultValue, 25)
     textarea.style.width = '100%';
     textarea.style.marginBottom = '16px';
- 
-    if (awssfUtils.isCarlo() && setupAWSconfig()) {
-      var select = document.createElement('select');
+    div.appendChild(form.table);
+
+    var form2 = new mxForm('properties');
+    form2.table.style.width = '100%';
+    form2.table.style.paddingRight = '20px';
+    var colgroupName = document.createElement('colgroup');
+    colgroupName.width = '120';
+    form2.table.insertBefore(colgroupName, form2.body);
+    var colgroupValue = document.createElement('colgroup');
+    form2.table.insertBefore(colgroupValue, form2.body);
+
+    var select = document.createElement('select');
+    form2.addField('StateMachine:', select)
+    if (awssfUtils.inCarlo() && setupAWSconfig()) {
       __listStateMachines().then(function(data) {
         for (var j in data.stateMachines){
           var option = document.createElement('option');
@@ -2081,7 +2081,6 @@ Draw.loadPlugin(function(ui) {
           select.appendChild(option);
         }
       });
-      form.addField('StateMachine:', select)
       mxEvent.addListener(select, 'change', function()
       {
         __describeStateMachine(select.value).then(function(newData) {
@@ -2092,8 +2091,13 @@ Draw.loadPlugin(function(ui) {
           }
         });
       });
+    } else {
+      var option = document.createElement('option');
+      mxUtils.writeln(option, 'Select a StateMachine...');
+      select.appendChild(option);
+      select.disabled = true
     }
-    div.appendChild(form.table);
+    div.appendChild(form2.table);
     var buttons = document.createElement('div');
     buttons.style.marginTop = '18px';
     buttons.style.textAlign = 'right';
@@ -2101,7 +2105,7 @@ Draw.loadPlugin(function(ui) {
     {
       textarea.focus();
     };
-    var cancelBtn = mxUtils.button(mxResources.get('close'), function()
+    var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
     {
       if (textarea.value == defaultValue)
       {
@@ -2115,24 +2119,28 @@ Draw.loadPlugin(function(ui) {
         });
       }
     });
-    
+
     cancelBtn.className = 'geBtn';
-    
+
     if (editorUi.editor.cancelFirst)
     {
       buttons.appendChild(cancelBtn);
     }
-    
+
     var okBtn = mxUtils.button(mxResources.get('awssfImportBtn'), function()
     {
-      editorUi.hideDialog();
-      var cells = parse(textarea.value);
-      executeLayout(cells);
+      try {
+        var cells = parse(textarea.value);
+        editorUi.hideDialog();
+        executeLayout(cells);
+      }catch(err){
+        alert(err)
+      }
     });
     buttons.appendChild(okBtn);
-    
+
     okBtn.className = 'geBtn gePrimaryBtn';
-    
+
     if (!editorUi.editor.cancelFirst)
     {
       buttons.appendChild(cancelBtn);
@@ -2235,14 +2243,14 @@ Draw.loadPlugin(function(ui) {
         });
       }
     });
-    
+
     cancelBtn.className = 'geBtn';
-    
+
     if (editorUi.editor.cancelFirst)
     {
       buttons.appendChild(cancelBtn);
     }
-    
+
     var okBtn = mxUtils.button(mxResources.get('awssfDeployBtn'), function()
     {
       var params = {
@@ -2263,14 +2271,65 @@ Draw.loadPlugin(function(ui) {
       })
     });
     buttons.appendChild(okBtn);
-    
+
     okBtn.className = 'geBtn gePrimaryBtn';
-    
+
     if (!editorUi.editor.cancelFirst)
     {
       buttons.appendChild(cancelBtn);
     }
     div.appendChild(buttons)
     this.container = div;
+  }
+
+  var awssfExportDialog = function(editorUi, title, value) {
+    var div = document.createElement('div');
+
+    var h3 = document.createElement('h2');
+    mxUtils.write(h3, title);
+    h3.style.marginTop = '0px';
+    h3.style.marginBottom = '24px';
+    div.appendChild(h3);
+    var form = new mxForm('properties');
+    form.table.style.width = '100%';
+    form.table.style.paddingRight = '20px';
+    var textarea = form.addTextarea('', value, 25)
+    textarea.style.width = '100%';
+    textarea.style.marginBottom = '16px';
+    textarea.readOnly = true;
+    div.appendChild(form.table);
+    var buttons = document.createElement('div');
+    buttons.style.marginTop = '18px';
+    buttons.style.textAlign = 'right';
+    this.init = function() {
+      textarea.focus();
+      textarea.scrollTop = 0;
+    };
+    var copyBtn = mxUtils.button(mxResources.get('copy'), function() {
+      const range = document.createRange()
+      range.selectNode(textarea)
+      const selection = document.getSelection()
+      selection.removeAllRanges()
+      selection.addRange(range)
+      document.execCommand('copy')
+      range.detach();
+    });
+    copyBtn.className = 'geBtn gePrimaryBtn';
+    buttons.appendChild(copyBtn);
+
+    var cancelBtn = mxUtils.button(mxResources.get('close'), function() {
+      editorUi.hideDialog();
+    });
+    cancelBtn.className = 'geBtn';
+    buttons.appendChild(cancelBtn);
+    div.appendChild(buttons)
+    this.container = div;
+  }
+
+  function popup(title, src) {
+    var dlg = new awssfExportDialog(ui, title, src);
+    ui.showDialog(dlg.container, 700, 500, true, false);
+    dlg.container.parentNode.style.resize = 'both';
+    dlg.init();
   }
 });
