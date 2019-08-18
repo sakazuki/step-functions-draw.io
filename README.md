@@ -15,7 +15,7 @@
 1. Select Menu [Extras]-[Plugins]
 1. Click [Add]
 1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.3.1/aws-step-functions.js  
-   Develop version: https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.0-beta1/aws-step-functions.js
+   Develop version: https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.0-beta2/aws-step-functions.js
 1. [Apply]
 1. Reload the page
 
