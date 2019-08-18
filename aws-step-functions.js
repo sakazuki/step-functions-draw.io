@@ -1,12 +1,12 @@
 mxscript("https://cdn.rawgit.com/soney/jsep/b8baab7b/build/jsep.min.js");
 mxscript("https://cdn.rawgit.com/nodeca/js-yaml/9c1894e2/dist/js-yaml.min.js");
-mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.9.0.min.js");
+mxscript("https://sdk.amazonaws.com/js/aws-sdk-2.510.0.min.js");
 // mxscript("https://rawgit.com/soney/jsep/master/build/jsep.min.js");
-//mxscript("https://localhost:8000/js/aws-sdk-2.9.0.js");
-//mxscript("https://localhost:8000/js/jsep.min.js");
+// mxscript("https://f248fda6.ngrok.io/aws-sdk-2.510.0.js");
+// mxscript("https://localhost:8000/js/jsep.min.js");
 
 Draw.loadPlugin(function(ui) {
-  awssfUtils = {
+  var awssfUtils = {
     isAWSsf: function(cell){
       return (cell && (cell.awssf != null)) && (cell.value && cell.value.getAttribute("type") && cell.value.getAttribute("type").indexOf("awssf") == 0);
     },
@@ -177,14 +177,49 @@ Draw.loadPlugin(function(ui) {
           Variable: varname
         };
         tmp[vartype + this.ops[obj.operator]] = val;
-        Object.assign(res, tmp);        
+        Object.assign(res, tmp);
       }
       return res;
     },
+    ruleToJSEP(choice){
+      var m;
+      var variable = choice.Variable;
+      var ops = {
+        And: "&&",
+        Or: "||",
+        Equals: "==",
+        GreaterThan: ">",
+        GreaterThanEquals: ">=",
+        LessThan: "<",
+        LessThanEquals: "<="
+      }
+      for (var key in choice) {
+        var value = choice[key]
+        if (key.match(/^(And|Or)$/)) {
+          return value.map(ch => "(" + this.ruleToJSEP(ch) +")").join(" " + ops[key] + " ")
+        } else if (key.match(/^(Not)$/)) {
+          return "!(" + this.ruleToJSEP(value) + ")"
+        } else if (m = key.match(/^(Boolean|Numeric|String|Timestamp)(Equals|GreaterThan|GreaterThanEquals|LessThan|LessThanEquals)$/)) {
+          if (m[1].match(/(String|Timestamp)/i)){
+            return [variable, ops[m[2]], '"' + value + '"'].join(" ")
+          } else {
+            return [variable, ops[m[2]], value].join(" ")
+          }
+        }
+      }
+    },
     adjustJsonPath: function(val){
       return (val === "null") ? null : val
+    },
+    inCarlo() {
+      return (typeof __updateAWSconfig !== "undefined") &&
+        (typeof __describeStateMachine !== "undefined") &&
+        (typeof __listStateMachines !== "undefined") &&
+        (typeof __deployStateMachine !== "undefined")
     }
   }
+
+  var graph = ui.editor ? ui.editor.graph : ui.graph;
 
   function registCodec(func){
     var codec = new mxObjectCodec(new func());
@@ -204,7 +239,10 @@ Draw.loadPlugin(function(ui) {
 
   function createPoint(awssf, state, geometry){
     var label = state.prototype.type;
-    if (geometry == null) geometry = new mxGeometry(0, 0, 40, 40); 
+    if (geometry == null) {
+      var pt = (graph.isMouseInsertPoint()) ? graph.getInsertPoint() : graph.getFreeInsertPoint();
+      geometry = new mxGeometry(pt.x, pt.y, 40, 40);
+    }
     var cell = new mxCell(label, geometry,'ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;');
     cell.vertex = true;
     cell.value = mxUtils.createXmlDocument().createElement('object');
@@ -223,7 +261,7 @@ Draw.loadPlugin(function(ui) {
     return img;
   }
 
-  awssfStateHandler = function(state){
+  var awssfStateHandler = function(state){
     mxVertexHandler.apply(this, arguments);
   }
   awssfStateHandler.prototype = new mxVertexHandler();
@@ -273,7 +311,7 @@ Draw.loadPlugin(function(ui) {
     }
   };
 
-  awssfEdgeHandler = function(state){
+  var awssfEdgeHandler = function(state){
     mxEdgeHandler.apply(this, arguments);
   }
   awssfEdgeHandler.prototype = new mxEdgeHandler();
@@ -325,7 +363,7 @@ Draw.loadPlugin(function(ui) {
 
 
 
-  StartPoint = function(){};
+  var StartPoint = function(){};
   StartPoint.prototype.type = 'Start';
   StartPoint.prototype.create = function(geometry){
     var cell = createPoint(this, StartPoint, geometry);
@@ -335,7 +373,7 @@ Draw.loadPlugin(function(ui) {
     return StartAtEdge.prototype.create();
   }
 
-  EndPoint = function(){};
+  var EndPoint = function(){};
   EndPoint.prototype.type = 'End';
   EndPoint.prototype.create = function(){
     var cell = createPoint(this, EndPoint);
@@ -346,8 +384,8 @@ Draw.loadPlugin(function(ui) {
     var cell = new mxCell('AWSconfig', new mxGeometry(0, 0, 70, 46), 'dashed=0;html=1;shape=mxgraph.aws2.non-service_specific.cloud;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;');
     cell.vertex = true;
     cell.value = mxUtils.createXmlDocument().createElement('object');
-    cell.setAttribute('label', 'config');  
-    cell.setAttribute('type', 'awssfAWSconfig');  
+    cell.setAttribute('label', 'config');
+    cell.setAttribute('type', 'awssfAWSconfig');
     cell.setAttribute('accessKeyId', '');
     cell.setAttribute('secretAccessKey', '');
     cell.setAttribute('region', '');
@@ -355,34 +393,39 @@ Draw.loadPlugin(function(ui) {
     return cell;
   }
 
-  AWSconfig = function(){};
+  var AWSconfig = function(){};
   AWSconfig.prototype.create = function(){
     return createAWSconfig(this);
   }
   AWSconfig.prototype.handler = awssfStateHandler;
   registCodec(AWSconfig);
 
-  function createState(awssf, state, style){
-    var label = state.prototype.type;
+  function createState(awssf, name, style, json){
+    var label = name || awssf.type;
     if (!style) style = 'rounded=1;whiteSpace=wrap;html=1;gradientColor=none;dashed=1';
-    var cell = new mxCell(label, new mxGeometry(0, 0, 80, 40), style);
+    if (!json) json = {};
+    var pt = (graph.isMouseInsertPoint()) ? graph.getInsertPoint() : graph.getFreeInsertPoint();
+    var geometry = new mxGeometry(pt.x, pt.y, 80, 40);
+    var cell = new mxCell(label, geometry, style);
     cell.vertex = true;
     cell.value = mxUtils.createXmlDocument().createElement('object');
     cell.setAttribute('label', label);
-    cell.setAttribute('type', 'awssf' + label);
-    cell.setAttribute('comment', '');
-    cell.setAttribute('input_path', '');
-    cell.setAttribute('output_path', '');
+    cell.setAttribute('type', 'awssf' + awssf.type);
+    cell.setAttribute('comment', json.Comment || '');
+    cell.setAttribute('input_path', json.InputPath || '');
+    cell.setAttribute('output_path', json.OutputPath || '');
     cell.awssf = awssf;
     return cell;
   }
 
   PassState = function(){};
   PassState.prototype.type = 'Pass';
-  PassState.prototype.create = function(){
-    var cell = createState(this, PassState, 'shape=mxgraph.flowchart.process;whiteSpace=wrap;gradientColor=none;html=1;');
-    cell.value.setAttribute('result', '');
-    cell.value.setAttribute('result_path', '');
+  PassState.prototype.create = function(label, json){
+    if (!json) json = {};
+    var style = 'shape=mxgraph.flowchart.process;whiteSpace=wrap;gradientColor=none;html=1;';
+    var cell = createState(this, label, style, json);
+    cell.value.setAttribute('result', json.Result || '');
+    cell.value.setAttribute('result_path', json.ResultPath || '');
     return cell;
   }
   PassState.prototype.create_default_edge = function(src){
@@ -398,7 +441,7 @@ Draw.loadPlugin(function(ui) {
   }
   PassState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Pass"
     };
@@ -418,7 +461,7 @@ Draw.loadPlugin(function(ui) {
       if (edge.source != cell) continue;
       if (awssfUtils.isNext(edge)){
         exist_next_edge = true;
-        Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
+        Object.assign(data[label], edge.awssf.expJSON(edge, cells))
       }
     }
     if (exist_next_edge == false || data[label].Next == 'End'){
@@ -428,7 +471,7 @@ Draw.loadPlugin(function(ui) {
     return data;
   };
   registCodec(PassState);
-  PassStateHandler = function(state){
+  var PassStateHandler = function(state){
     this.custom = function(){
       this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
     };
@@ -437,15 +480,17 @@ Draw.loadPlugin(function(ui) {
   PassState.prototype.handler = PassStateHandler;
   mxUtils.extend(PassStateHandler, awssfStateHandler);
 
-  TaskState = function(){};
+  var TaskState = function(){};
   TaskState.prototype.type = 'Task';
-  TaskState.prototype.create = function(){
-    var cell = createState(this, TaskState, 'shape=stencil(rZVNb4MwDIZ/DdcqkI2P48S6Y1Wph51TMCMqTVDC2m2/fiEBdUCyAavExa+xH78BjIdTWZIavAAxcgYPP3tBsBeQQ0EZ5EreC56BlEpWQWluCJEJryZMYhMSWUPWGO1CBCXHCkxGNoKf4ErzputAWQmCNm0Wbz30pO5pL5xmnDHVhHImB5kfedWMUKZq0YdphjaPBvPZxSaqFeEMDYiBerO508LLaow/D3NYihl66aF/YV4XYvx1mO3iQ0PBiIT8mazdUk8WWBLPhB2Ww/r3foWz5cc4gc13ZoPhVCmujw2nR5Kd3gR/Z7l1RJ0R7cfuem2tC2K0PojIJP3qpgw3kR+FcYSihzhIEuy7hnaMhtOCC/hl5oJWldlDroOvSbueJok+feYXuPmNLH5tbfvqSu1TV3XoLteWHYOp3X0/P4n/L0Oj8js70jWT56tV8/vSwjc=);whiteSpace=wrap;gradientColor=none;html=1;');
-    cell.setAttribute('resource', '');
-    cell.setAttribute('parameters', '');
-    cell.setAttribute('timeout_seconds', 60);
-    cell.setAttribute('heartbeat_seconds', '');
-    cell.setAttribute('result_path', '');
+  TaskState.prototype.create = function(label, json){
+    if (!json) json = {};
+    var style = 'shape=stencil(rZVNb4MwDIZ/DdcqkI2P48S6Y1Wph51TMCMqTVDC2m2/fiEBdUCyAavExa+xH78BjIdTWZIavAAxcgYPP3tBsBeQQ0EZ5EreC56BlEpWQWluCJEJryZMYhMSWUPWGO1CBCXHCkxGNoKf4ErzputAWQmCNm0Wbz30pO5pL5xmnDHVhHImB5kfedWMUKZq0YdphjaPBvPZxSaqFeEMDYiBerO508LLaow/D3NYihl66aF/YV4XYvx1mO3iQ0PBiIT8mazdUk8WWBLPhB2Ww/r3foWz5cc4gc13ZoPhVCmujw2nR5Kd3gR/Z7l1RJ0R7cfuem2tC2K0PojIJP3qpgw3kR+FcYSihzhIEuy7hnaMhtOCC/hl5oJWldlDroOvSbueJok+feYXuPmNLH5tbfvqSu1TV3XoLteWHYOp3X0/P4n/L0Oj8js70jWT56tV8/vSwjc=);whiteSpace=wrap;gradientColor=none;html=1;';
+    var cell = createState(this, label, style, json);
+    cell.setAttribute('resource', json.Resource || '');
+    cell.setAttribute('parameters', JSON.stringify(json.Parameters) || '');
+    cell.setAttribute('timeout_seconds', json.TimeoutSeconds || 60);
+    cell.setAttribute('heartbeat_seconds', json.HeartbeatSeconds || '');
+    cell.setAttribute('result_path', json.ResultPath || '');
     return cell;
   }
   TaskState.prototype.create_default_edge = function(src){
@@ -453,7 +498,7 @@ Draw.loadPlugin(function(ui) {
       var edge = src.edges[i];
       if ((edge.source == src) && awssfUtils.isNext(edge))
         return CatchEdge.prototype.create();
-    }  
+    }
     return NextEdge.prototype.create();
   }
   TaskState.prototype.validate = function(cell, res){
@@ -478,7 +523,7 @@ Draw.loadPlugin(function(ui) {
   };
   TaskState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Task",
       Resource: cell.getAttribute("resource")
@@ -504,7 +549,7 @@ Draw.loadPlugin(function(ui) {
         if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
         if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
         return 0;
-      });    
+      });
       for(var i in sorted_edges){
         var edge = sorted_edges[i];
         if (edge.source != cell) continue;
@@ -518,7 +563,7 @@ Draw.loadPlugin(function(ui) {
             data[label]["Catch"].push(edge.awssf.expJSON(edge, cells));
           }else if (awssfUtils.isNext(edge)){
             exist_next_edge = true;
-            Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
+            Object.assign(data[label], edge.awssf.expJSON(edge, cells))
           }
         }
       }
@@ -530,7 +575,7 @@ Draw.loadPlugin(function(ui) {
     return data;
   };
   registCodec(TaskState);
-  TaskStateHandler = function(state){
+  var TaskStateHandler = function(state){
     this.custom = function(){
       this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
       this.domNode.appendChild(CatchEdge.prototype.createHandlerImage.apply(this, arguments));
@@ -541,11 +586,12 @@ Draw.loadPlugin(function(ui) {
   TaskState.prototype.handler = TaskStateHandler;
   mxUtils.extend(TaskStateHandler, awssfStateHandler);
 
-
   ChoiceState = function(){};
   ChoiceState.prototype.type = 'Choice';
-  ChoiceState.prototype.create = function(){
-    var cell = createState(this, ChoiceState, 'shape=stencil(rZZNT4QwEIZ/DddNodmgR8Pi0YsHzl12VpqFlrS46r+3UIl8FNOhJhzgHWaezvBSiGimK9ZClBDBGojoKUqSE5RccynMqdGZbqHsbOTOFGfnGmxEd0re4INfusqGuahA8a6P0jwiT+ae/qBZKYUwRUxNPYtM4qYY48Lkkk9bjBzio+V8/Qj2qjWIBjpQM/V39S9FMUjPCBIl+0ho0L6O0Jh0Xz85GvSwr6EcT1qYIfYjvYabwZsUaAZfTqgZfDnBZvAG4UkkXfjukBz9aAX6ZVqAfDn/0FPqy8J74jHZO8AcO8B43wDxplj35DvA3DVAmhll68NFszMrb29KvouLc4kt6z+Kq8AYbuQdJiNy7aKu1sf0motJunMT9k+Pydzjx0D+WA+xgtAC6AbKWmrYspfRV49vUDeeOc2uUsEfZrjyurY/S06TrbIH1f6XDcI3);whiteSpace=wrap;html=1;gradientColor=none;dashed=1');
+  ChoiceState.prototype.create = function(label, json){
+    if (!json) json = {};
+    var style = 'shape=stencil(rZZNT4QwEIZ/DddNodmgR8Pi0YsHzl12VpqFlrS46r+3UIl8FNOhJhzgHWaezvBSiGimK9ZClBDBGojoKUqSE5RccynMqdGZbqHsbOTOFGfnGmxEd0re4INfusqGuahA8a6P0jwiT+ae/qBZKYUwRUxNPYtM4qYY48Lkkk9bjBzio+V8/Qj2qjWIBjpQM/V39S9FMUjPCBIl+0ho0L6O0Jh0Xz85GvSwr6EcT1qYIfYjvYabwZsUaAZfTqgZfDnBZvAG4UkkXfjukBz9aAX6ZVqAfDn/0FPqy8J74jHZO8AcO8B43wDxplj35DvA3DVAmhll68NFszMrb29KvouLc4kt6z+Kq8AYbuQdJiNy7aKu1sf0motJunMT9k+Pydzjx0D+WA+xgtAC6AbKWmrYspfRV49vUDeeOc2uUsEfZrjyurY/S06TrbIH1f6XDcI3);whiteSpace=wrap;html=1;gradientColor=none;dashed=1';
+    var cell = createState(this, label, style, json);
     cell.setAttribute('choices', '');
     cell.setAttribute('default', '');
     return cell;
@@ -564,7 +610,7 @@ Draw.loadPlugin(function(ui) {
   };
   ChoiceState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Choice",
       Choices: []
@@ -595,7 +641,7 @@ Draw.loadPlugin(function(ui) {
     return data;
   };
   registCodec(ChoiceState);
-  ChoiceStateHandler = function(state){
+  var ChoiceStateHandler = function(state){
     this.custom = function(){
       this.domNode.appendChild(ChoiceEdge.prototype.createHandlerImage.apply(this, arguments));
       this.domNode.appendChild(DefaultEdge.prototype.createHandlerImage.apply(this, arguments));
@@ -607,10 +653,23 @@ Draw.loadPlugin(function(ui) {
 
   WaitState = function(){};
   WaitState.prototype.type = 'Wait';
-  WaitState.prototype.create = function(){
-    var cell = createState(this, WaitState, 'shape=mxgraph.flowchart.delay;whiteSpace=wrap;gradientColor=none;html=1;');  
-    cell.setAttribute('seconds', '');
-    return cell; 
+  WaitState.prototype.create = function(label, json){
+    if (!json) json = {};
+    var style = 'shape=mxgraph.flowchart.delay;whiteSpace=wrap;gradientColor=none;html=1;';
+    var cell = createState(this, label, style, json);
+    var found = false;
+    var options = WaitState.prototype.cst.DURATION_FORMAT;
+    for(var j in options){
+      var key = awssfUtils.camelToSnake(options[j]);
+      if (json[options[j]]) {
+        cell.setAttribute(key, json[options[j]]);
+        found = true;
+      } else {
+        cell.value.removeAttribute(key);
+      }
+    }
+    if (!found) cell.setAttribute('seconds', '');
+    return cell;
   }
   WaitState.prototype.create_default_edge = function(src){
     for (var i in src.edges){
@@ -644,7 +703,7 @@ Draw.loadPlugin(function(ui) {
   };
   WaitState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Wait"
     };
@@ -673,7 +732,7 @@ Draw.loadPlugin(function(ui) {
       if (edge.source != cell) continue;
       if (awssfUtils.isNext(edge)){
         exist_next_edge = true;
-        Object.assign(data[label], edge.awssf.expJSON(edge, cells)) 
+        Object.assign(data[label], edge.awssf.expJSON(edge, cells))
       }
     }
     if (exist_next_edge == false || data[label].Next == 'End'){
@@ -745,7 +804,7 @@ Draw.loadPlugin(function(ui) {
     return removeLabel;
   }
   registCodec(WaitState);
-  WaitStateHandler = function(state){
+  var WaitStateHandler = function(state){
     this.custom = function(){
       this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
     };
@@ -755,10 +814,12 @@ Draw.loadPlugin(function(ui) {
   mxUtils.extend(WaitStateHandler, awssfStateHandler);
 
 
-  SucceedState = function(){};
+  var SucceedState = function(){};
   SucceedState.prototype.type = 'Succeed';
-  SucceedState.prototype.create = function(){
-    var cell = createState(this, SucceedState, 'shape=mxgraph.flowchart.terminator;html=1;whiteSpace=wrap;gradientColor=none;');
+  SucceedState.prototype.create = function(label, json){
+    if (!json) json = {};
+    var style = 'shape=mxgraph.flowchart.terminator;html=1;whiteSpace=wrap;gradientColor=none;';
+    var cell = createState(this, label, style, json);
     return cell;
   };
   SucceedState.prototype.validate = function(cell, res){
@@ -768,10 +829,10 @@ Draw.loadPlugin(function(ui) {
       res.push("A Succeed state MUST have no outgoing edge")
     }
     return awssfUtils.validateCommonAttributes(cell, res, false);
-  };  
+  };
   SucceedState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Succeed"
     }
@@ -786,15 +847,17 @@ Draw.loadPlugin(function(ui) {
   registCodec(SucceedState);
   SucceedState.prototype.handler = awssfStateHandler;
 
-  FailState = function(){};
+  var FailState = function(){};
   FailState.prototype.type = 'Fail';
-  FailState.prototype.create = function(){
-    var cell = createState(this, FailState, 'shape=mxgraph.flowchart.terminator;html=1;whiteSpace=wrap;gradientColor=none;');
-    cell.setAttribute('error', '');
-    cell.setAttribute('cause', '');
+  FailState.prototype.create = function(label, json){
+    if (!json) json = {};
+    var style = 'shape=mxgraph.flowchart.terminator;html=1;whiteSpace=wrap;gradientColor=none;';
+    var cell = createState(this, label, style, json);
+    cell.setAttribute('error', json.Error || '');
+    cell.setAttribute('cause', json.Cause || '');
     cell.value.removeAttribute('input_path');
-    cell.value.removeAttribute('output_path');  
-    return cell;  
+    cell.value.removeAttribute('output_path');
+    return cell;
   };
   FailState.prototype.validate = function(cell, res){
     if (!res) res = [];
@@ -812,7 +875,7 @@ Draw.loadPlugin(function(ui) {
   };
   FailState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Fail",
       Error: cell.getAttribute("error"),
@@ -825,30 +888,30 @@ Draw.loadPlugin(function(ui) {
   registCodec(FailState);
   FailState.prototype.handler = awssfStateHandler;
 
-  ParallelState = function(){};
+  var ParallelState = function(){};
   ParallelState.prototype.type = 'Parallel';
-  ParallelState.prototype.create = function(){
-    var cell = createState(this, ParallelState);
-    cell.setStyle('swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none;');
-    cell.setGeometry(new mxGeometry(0, 0, 480, 200));
-    cell.setAttribute('result_path', '');
+  ParallelState.prototype.create = function(label, json){
+    if (!json) json = {};
+    var cell = createState(this, label);
+    cell.setStyle('swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none');
+    var pt = cell.getGeometry();
+    cell.setGeometry(new mxGeometry(pt.x, pt.y, 480, 200));
+    cell.setAttribute('result_path', json.ResultPath || '');
     cell.setAttribute('branches', '');
     var sp = StartPoint.prototype.create(new mxGeometry((cell.geometry.width - 30)/2, 40, 30, 30));
     cell.insert(sp);
-    var task1 = TaskState.prototype.create();
-    task1.setGeometry(new mxGeometry(80, 80, task1.geometry.width, task1.geometry.height));
-    cell.insert(task1);
-    var edge1 = StartAtEdge.prototype.create();
-    sp.insertEdge(edge1, true);
-    task1.insertEdge(edge1, false);
-    cell.insert(edge1);  
-    var task2 = TaskState.prototype.create();
-    task2.setGeometry(new mxGeometry(320, 80, task2.geometry.width, task2.geometry.height));
-    cell.insert(task2);
-    var edge2 = StartAtEdge.prototype.create();
-    sp.insertEdge(edge2, true);
-    task2.insertEdge(edge2, false);
-    cell.insert(edge2);  
+    if (Object.keys(json).length === 0) {
+      var task1 = TaskState.prototype.create();
+      task1.setGeometry(new mxGeometry(80, 80, task1.geometry.width, task1.geometry.height));
+      cell.insert(task1);
+      var edge1 = StartAtEdge.prototype.create('StartAt', sp, task1);
+      cell.insert(edge1);
+      var task2 = TaskState.prototype.create();
+      task2.setGeometry(new mxGeometry(320, 80, task2.geometry.width, task2.geometry.height));
+      cell.insert(task2);
+      var edge2 = StartAtEdge.prototype.create('StartAt', sp, task2);
+      cell.insert(edge2);
+    }
     return cell;
   };
   ParallelState.prototype.hiddenAttributes = ['branches'];
@@ -865,7 +928,7 @@ Draw.loadPlugin(function(ui) {
   };
   ParallelState.prototype.expJSON = function(cell, cells){
     var data = {};
-    var label = cell.getAttribute("label"); 
+    var label = cell.getAttribute("label");
     data[label] = {
       Type: "Parallel",
       Branches: []
@@ -878,7 +941,7 @@ Draw.loadPlugin(function(ui) {
       data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
     if (cell.getAttribute("result_path"))
       data[label].ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
-    
+
     var startat = [];
     for(var i in cell.children){
       var child = cell.children[i];
@@ -889,7 +952,7 @@ Draw.loadPlugin(function(ui) {
         if (awssfUtils.isStartAt(edge)){
           startat.push(cells[edge.target.id]);
         }
-      }      
+      }
     }
 
     function traceAll(state, res){
@@ -956,18 +1019,18 @@ Draw.loadPlugin(function(ui) {
 
   };
   registCodec(ParallelState);
-  ParallelStateHandler = function(state){
+  var ParallelStateHandler = function(state){
     this.custom = function(){
       this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
       this.domNode.appendChild(CatchEdge.prototype.createHandlerImage.apply(this, arguments));
-      this.domNode.appendChild(RetryEdge.prototype.createHandlerImage.apply(this, arguments));  
+      this.domNode.appendChild(RetryEdge.prototype.createHandlerImage.apply(this, arguments));
     };
     awssfStateHandler.apply(this, arguments);
   }
   ParallelState.prototype.handler = ParallelStateHandler;
   mxUtils.extend(ParallelStateHandler, awssfStateHandler);
 
-  function createEdge(awssf, edge, label, style){
+  function createEdge(awssf, label, style, source, target){
     var cell = new mxCell(label, new mxGeometry(0, 0, 60, 60), style);
     cell.geometry.setTerminalPoint(new mxPoint(0, 0), true);
     cell.geometry.setTerminalPoint(new mxPoint(cell.geometry.width, cell.geometry.height), false);
@@ -975,16 +1038,20 @@ Draw.loadPlugin(function(ui) {
     cell.edge = true;
     cell.value = mxUtils.createXmlDocument().createElement('object');
     cell.setAttribute('label', label);
-    cell.setAttribute('type', 'awssf' + label);
-    cell.awssf = awssf;  
+    cell.setAttribute('type', 'awssf' + awssf.type);
+    cell.awssf = awssf;
+    if (source && target) {
+      cell.source = source;
+      cell.target = target;
+    }
     return cell;
   }
 
-  StartAtEdge = function(){};
+  var StartAtEdge = function(){};
   StartAtEdge.prototype.type = 'StartAt';
-  StartAtEdge.prototype.create = function(label){
+  StartAtEdge.prototype.create = function(label, source, target){
     if (label == null ) label = this.type;
-    var cell = createEdge(this, StartAtEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');
+    var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target);
     return cell;
   };
   StartAtEdge.prototype.validate = function(cell, res){
@@ -1008,11 +1075,11 @@ Draw.loadPlugin(function(ui) {
   registCodec(StartAtEdge);
 
 
-  NextEdge = function(){};
+  var NextEdge = function(){};
   NextEdge.prototype.type = 'Next';
-  NextEdge.prototype.create = function(label){
-    if (label == null ) label = this.type;  
-    var cell = createEdge(this, NextEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');
+  NextEdge.prototype.create = function(label, source, target){
+    if (label == null ) label = this.type;
+    var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target);
     return cell;
   };
   NextEdge.prototype.validate = function(cell, res){
@@ -1040,20 +1107,21 @@ Draw.loadPlugin(function(ui) {
   registCodec(NextEdge);
 
 
-  RetryEdge = function(){};
+  var RetryEdge = function(){};
   RetryEdge.prototype.type = 'Retry';
-  RetryEdge.prototype.create = function(label){
+  RetryEdge.prototype.create = function(label, source, json, weight){
     if (label == null ) label = this.type;
-    var cell = createEdge(this, RetryEdge, label, 'edgeStyle=orthogonalEdgeStyle;curved=1;html=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;startArrow=none;startFill=0;jettySize=auto;orthogonalLoop=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');  
+    if (!json) json = {ErrorEquals: '', InterValSeconds: 1, MaxAttempts: 3, BackoffRate: 2}
+    var cell = createEdge(this, label, 'edgeStyle=orthogonalEdgeStyle;curved=1;html=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;startArrow=none;startFill=0;jettySize=auto;orthogonalLoop=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, source);
     cell.geometry.setTerminalPoint(new mxPoint(0, cell.geometry.height), true);
     cell.geometry.setTerminalPoint(new mxPoint(cell.geometry.width, 0), false);
     // cell.setAttribute('label', '%error_equals%');
     cell.setAttribute('placeholders', 1);
-    cell.setAttribute('error_equals', '');
-    cell.setAttribute('interval_seconds', 1);
-    cell.setAttribute('max_attempts', 3);
-    cell.setAttribute('backoff_rate', 2);
-    cell.setAttribute('weight', 1);
+    cell.setAttribute('error_equals', json.ErrorEquals || '');
+    cell.setAttribute('interval_seconds', json.IntervalSeconds || '');
+    cell.setAttribute('max_attempts', json.MaxAttempts || '');
+    cell.setAttribute('backoff_rate', json.BackoffRate || '');
+    cell.setAttribute('weight', weight || 1);
     return cell;
   };
   RetryEdge.prototype.validate = function(cell, res){
@@ -1097,16 +1165,17 @@ Draw.loadPlugin(function(ui) {
   RetryEdge.prototype.handler = awssfEdgeHandler;
   registCodec(RetryEdge);
 
-  CatchEdge = function(){};
+  var CatchEdge = function(){};
   CatchEdge.prototype.type = 'Catch';
-  CatchEdge.prototype.create = function(label){
+  CatchEdge.prototype.create = function(label, source, target, json, weight){
     if (label == null ) label = this.type;
-    var cell = createEdge(this, CatchEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');    
+    if (!json) json = {};
+    var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target, json);
     // cell.setAttribute('label', '%error_equals%');
     cell.setAttribute('placeholders', 1);
-    cell.setAttribute('error_equals', '');
-    cell.setAttribute('result_path', '');
-    cell.setAttribute('weight', '1');
+    cell.setAttribute('error_equals', json.ErrorEquals || '');
+    cell.setAttribute('result_path', json.ResultPath || '');
+    cell.setAttribute('weight', weight || '1');
     return cell;
   };
   CatchEdge.prototype.validate = function(cell, res){
@@ -1121,7 +1190,7 @@ Draw.loadPlugin(function(ui) {
   };
   CatchEdge.prototype.expJSON = function(cell, cells){
     var errors = cell.getAttribute("error_equals");
-    errors = errors ? errors.split(/,\s*/) : [];    
+    errors = errors ? errors.split(/,\s*/) : [];
     if (cell.target != null){
       var data = {
         ErrorEquals: errors,
@@ -1132,22 +1201,23 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
-  CatchEdge.prototype.createHandlerImage = function(){ 
+  CatchEdge.prototype.createHandlerImage = function(){
       var img = awssfUtils.createHandlerImage.call(this, CatchEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACFklEQVRIS7WVT0hUURTGf5NRbsRZBLlImHZKwRREM2Cg48YWoRNE2SIq3BSloxudTToqkUXguBSCDEFsETMtRmqlxSi2CLIg3ESDDEOhlOJmimDi+Ob5/t2Z8RXe1Xv3nfed737nu+d4CoVCgX1anj2Bb2bg+wp8+wB1p+CoH7y+ipRKg+c34XUfrCZBnu2r2gsNYWgbB3lWLDW4AL68qQZVJel4qiWyLSd48gasPKt4ZEdAIALn45ZtK7gwfn7RPbD+x5WE5QQGuOg6cdwpxekuCEbgSCMcOAh/8rCWhvl7kF22EhHtI193a2CAq+Rova8BZ9/B21HIvdfeRYLtHLy4CuufrQn81yE8tbNngI954deWEXgsCJdm4ccXmA3D723jW2gEznbDchzeDDvZD/w0gYuPRRLzah6EYB+kH8DiI3d1EGm8viJzVSHbn8CJy5C6Ax+n3YEXC6vJshBzHu/CJJzshLm77sGbh6AlVoZ5Uz80DcDiQ6csh2rgXBQ2VtWJLcxVmpcraKAHQqPwaQZSt52SWTSXz3a3yJ7ZikuPNX/rVpR7kbjm9PrhWohqvai8zyVCpDlzC2rrwVNV/hJJvNLnwiTus3rdnUdAWPdmFDdUgPatt+gs/7UrFu1nPmzpfi5JzO2glEQihfSSPfVzHURq8KpXk0qVREAFUHq4q0lkZyn3QOanPkNljv7XDHXrFEX8X1YGE8t/bBUwAAAAAElFTkSuQmCC');
     return img;
   };
   CatchEdge.prototype.handler = awssfEdgeHandler;
   registCodec(CatchEdge);
 
-  ChoiceEdge = function(){};
+  var ChoiceEdge = function(){};
   ChoiceEdge.prototype.type = 'Choice';
-  ChoiceEdge.prototype.create = function(label){
+  ChoiceEdge.prototype.create = function(label, source, target, json, weight){
     if (label == null ) label = this.type;
-    var cell = createEdge(this, ChoiceEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');     
+    if (!json) json = {}
+    var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target);
     // cell.setAttribute('label', '%condition%');
-    cell.setAttribute('placeholders', 1);  
-    cell.setAttribute('condition', '$.foo == 1');
-    cell.setAttribute('weight', '1');    
+    cell.setAttribute('placeholders', 1);
+    cell.setAttribute('condition', awssfUtils.ruleToJSEP(json) || '$.foo == 1');
+    cell.setAttribute('weight', weight || '1');
     return cell;
   };
   ChoiceEdge.prototype.validate = function(cell, res){
@@ -1181,18 +1251,18 @@ Draw.loadPlugin(function(ui) {
       return {};
     }
   };
-  ChoiceEdge.prototype.createHandlerImage = function(){ 
+  ChoiceEdge.prototype.createHandlerImage = function(){
     var img = awssfUtils.createHandlerImage.call(this, ChoiceEdge, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAXCAYAAADgKtSgAAACWUlEQVRIS7WVXW/SUBjH/12AGZDSDkkwQ40mytCxmC1z6Fx82RUXiiYz8WvMO/0AXrqPoYkandF4t+iWuSXTRMkcu1OUKbFAAWFCy1ZzaoCe9oDUl3PV5pzzO8/L/3keTtM0DV1WsdpAVlaRLSoICi4ERScEj6PbldYex4LX1F08fyNjM7MN8m1ee5x9GAq5ER8TQb47LQs8ldnG49U8E8p65ErMj0jIzeRT8EerObz9UO3JZeOhWNiL+OiA5V4LTiy+tyTZBjcvXJ8KWDzQ4SSuc/NbllCMHtmLWJhHwOdEHwc0djSkpToWkkVk8nXKEBL72cQglQMdzgrH9Iiggwnk5XoJXwp1/f90mMf3Hzu4vyxBKqvUAycPe3A1to9Wy+0Hn1BX24oM+ftxbTKAQkXF3cVvUBrtvYtRARNhL1Y2y3ixXrJYf3PmQBsuV1Rt7skWdejcsA9nhngsvi9hOVW2lYfZy4OtOuA2Plc1cyITp/w4cciDZ2t5vPtoTz3GxHILSVkzu3dp3I8ogb+2Dz8/7MOFqKB7y7R8MsJj6rgPSxvWsLgcnL6XK6tMryjLWTHvltCJY15Mj4hIpit4ulaw5IOKOZGiWS3khlGKr1JlpKVaS4o1ZRcPV3IWrfc7OdyaOUhLsVPZn43wGD/qBe92/LaICJGpc1Khd+YzlNZt6Q8AsfpGImStUAL6b72laeWfdkWj/IweM/s5ecTYDjqFiISC9JKe+nkT8msSFfRQsR4hUAKMjw3Ym0RmK8kM/SoryMoKgqIL+0XX381Qu0rpeYb+KzDh/AQ2ZmDL5ziOTgAAAABJRU5ErkJggg==');
     return img;
   };
   ChoiceEdge.prototype.handler = awssfEdgeHandler;
   registCodec(ChoiceEdge);
 
-  DefaultEdge = function DefaultEdge(){};
-  DefaultEdge.prototype.type = 'Default';  
-  DefaultEdge.prototype.create = function(label){
-    if (label == null ) label = this.type;  
-    var cell = createEdge(this, DefaultEdge, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;');
+  var DefaultEdge = function DefaultEdge(){};
+  DefaultEdge.prototype.type = 'Default';
+  DefaultEdge.prototype.create = function(label, source, target){
+    if (label == null ) label = this.type;
+    var cell = createEdge(this, label, 'endArrow=classic;html=1;strokeColor=#000000;strokeWidth=1;fontSize=12;', source, target);
     return cell;
   };
   DefaultEdge.prototype.validate = function(cell, res){
@@ -1237,7 +1307,7 @@ Draw.loadPlugin(function(ui) {
   c.insertBefore(c.lastChild, c.firstChild);
   c.insertBefore(c.lastChild, c.firstChild);
 
-  mxGraphCreateEdge = mxGraph.prototype.createEdge;
+  var mxGraphCreateEdge = mxGraph.prototype.createEdge;
   mxGraph.prototype.createEdge = function(parent, id, value, source, target, style)
   {
     if (awssfUtils.isAWSsf(source) && source.awssf.create_default_edge){
@@ -1247,7 +1317,7 @@ Draw.loadPlugin(function(ui) {
     }
   };
 
-  origGraphCreateHander = ui.editor.graph.createHandler;
+  var origGraphCreateHander = ui.editor.graph.createHandler;
   ui.editor.graph.createHandler = function(state)
   {
     if (state != null && (this.getSelectionCells().length == 1) && awssfUtils.isAWSsf(state.cell) && state.cell.awssf.handler)
@@ -1257,7 +1327,7 @@ Draw.loadPlugin(function(ui) {
     return origGraphCreateHander.apply(this, arguments);
   };
 
-  mxConnectionHandlerCreateEdgeState = mxConnectionHandler.prototype.createEdgeState;
+  var mxConnectionHandlerCreateEdgeState = mxConnectionHandler.prototype.createEdgeState;
   mxConnectionHandler.prototype.createEdgeState = function(me){
     var cell = this.previous.cell;
     if (awssfUtils.isAWSsf(cell) && cell.awssf.create_default_edge){
@@ -1269,7 +1339,7 @@ Draw.loadPlugin(function(ui) {
     }
   };
 
-  mxConnectionHandlerInsertEdge = mxConnectionHandler.prototype.insertEdge;
+  var mxConnectionHandlerInsertEdge = mxConnectionHandler.prototype.insertEdge;
   mxConnectionHandler.prototype.insertEdge = function(parent, id, value, source, target, style)
   {
     var edge = null;
@@ -1296,7 +1366,7 @@ Draw.loadPlugin(function(ui) {
     }
   };
 
-  mxGraphModelCellAdded = ui.editor.graph.getModel().cellAdded;
+  var mxGraphModelCellAdded = ui.editor.graph.getModel().cellAdded;
   ui.editor.graph.getModel().cellAdded = function(cell){
     if (!awssfUtils.isAWSsf(cell)){
       return mxGraphModelCellAdded.apply(this, arguments);
@@ -1329,7 +1399,7 @@ Draw.loadPlugin(function(ui) {
     return mxGraphModelCellAdded.apply(this, arguments);
   };
 
-  origEditDataDialog = EditDataDialog;
+  var origEditDataDialog = EditDataDialog;
   EditDataDialog = function(ui, cell){
     if (!awssfUtils.isAWSsf(cell)){
       return origEditDataDialog.apply(this, arguments);
@@ -1339,9 +1409,9 @@ Draw.loadPlugin(function(ui) {
 
     div.style.height = '100%'; //'310px';
     div.style.overflow = 'auto';
-    
+
     var value = graph.getModel().getValue(cell);
-    
+
     // Converts the value to an XML node
     if (!mxUtils.isNode(value))
     {
@@ -1359,12 +1429,12 @@ Draw.loadPlugin(function(ui) {
     form.table.insertBefore(colgroupName, form.body);
     var colgroupValue = document.createElement('colgroup');
     form.table.insertBefore(colgroupValue, form.body);
-    
+
     var attrs = value.attributes;
     var names = [];
     var texts = [];
     var count = 0;
-    
+
     var addTextArea = function(index, name, value)
     {
       names[index] = name;
@@ -1453,7 +1523,7 @@ Draw.loadPlugin(function(ui) {
         count++;
       }
     }
-    
+
     div.appendChild(form.table);
 
     this.init = function()
@@ -1467,23 +1537,23 @@ Draw.loadPlugin(function(ui) {
         nameInput.focus();
       }
     };
-    
+
     var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
     {
       ui.hideDialog.apply(ui, arguments);
     });
     cancelBtn.className = 'geBtn';
-    
+
     var applyBtn = mxUtils.button(mxResources.get('apply'), function()
     {
       try
       {
         ui.hideDialog.apply(ui, arguments);
-        
+
         // Clones and updates the value
         value = value.cloneNode(true);
         var removeLabel = false;
-        
+
         for (var i = 0; i < names.length; i++)
         {
           if (cell.awssf && cell.awssf.applyForm){
@@ -1501,13 +1571,13 @@ Draw.loadPlugin(function(ui) {
             }
           }
         }
-        
+
         // Removes label if placeholder is assigned
         if (removeLabel)
         {
           value.removeAttribute('label');
         }
-        
+
         // Updates the value of the cell (undoable)
         graph.getModel().setValue(cell, value);
       }
@@ -1517,11 +1587,11 @@ Draw.loadPlugin(function(ui) {
       }
     });
     applyBtn.className = 'geBtn gePrimaryBtn';
-    
+
     var buttons = document.createElement('div');
     buttons.style.marginTop = '18px';
     buttons.style.textAlign = 'right';
-    
+
     if (graph.getModel().isVertex(cell) || graph.getModel().isEdge(cell))
     {
       var replace = document.createElement('span');
@@ -1529,13 +1599,13 @@ Draw.loadPlugin(function(ui) {
       var input = document.createElement('input');
       input.setAttribute('type', 'checkbox');
       input.style.marginRight = '6px';
-      
+
       if (value.getAttribute('placeholders') == '1')
       {
         input.setAttribute('checked', 'checked');
         input.defaultChecked = true;
       }
-    
+
       mxEvent.addListener(input, 'click', function()
       {
         if (value.getAttribute('placeholders') == '1')
@@ -1547,10 +1617,10 @@ Draw.loadPlugin(function(ui) {
           value.setAttribute('placeholders', '1');
         }
       });
-      
+
       replace.appendChild(input);
       mxUtils.write(replace, mxResources.get('placeholders'));
-      
+
       if (EditDataDialog.placeholderHelpLink != null)
       {
         var link = document.createElement('a');
@@ -1559,20 +1629,20 @@ Draw.loadPlugin(function(ui) {
         link.setAttribute('target', '_blank');
         link.style.marginLeft = '10px';
         link.style.cursor = 'help';
-        
+
         var icon = document.createElement('img');
         icon.setAttribute('border', '0');
         icon.setAttribute('valign', 'middle');
         icon.style.marginTop = '-4px';
         icon.setAttribute('src', Editor.helpImage);
         link.appendChild(icon);
-        
+
         replace.appendChild(link);
       }
-      
+
       buttons.appendChild(replace);
     }
-    
+
     if (ui.editor && ui.editor.cancelFirst)
     {
       buttons.appendChild(cancelBtn);
@@ -1585,31 +1655,33 @@ Draw.loadPlugin(function(ui) {
     }
 
     div.appendChild(buttons);
-    this.container = div;    
+    this.container = div;
   }
 
-	mxResources.parse('stepFunctions=StepFunctions');
-	mxResources.parse('awssfValidate=Validate');
-	mxResources.parse('awssfExportJSON=Export JSON');
-	mxResources.parse('awssfExportYAML=Export YAML');
-	mxResources.parse('awssfExport=Export');
-	mxResources.parse('awssfLambda=Lambda');
-  mxResources.parse('awssfDeploy=Deploy(CORS not supported)');
-  mxResources.parse('awssfInvoke=Invoke(CORS not supported)');
+  mxResources.parse('stepFunctions=StepFunctions');
+  mxResources.parse('awssfValidate=Validate');
+  mxResources.parse('awssfImport=Import...');
+  mxResources.parse('awssfImportBtn=Import');
+  mxResources.parse('awssfExportJSON=Export JSON');
+  mxResources.parse('awssfExportYAML=Export YAML');
+  mxResources.parse('awssfExport=Export');
+  mxResources.parse('awssfLambda=Lambda');
+  mxResources.parse('awssfDeploy=Deploy...');
+  mxResources.parse('awssfDeployBtn=Deploy');
 
   //override editData...
-	ui.actions.addAction('editData...', function()
-	{
-		var cell = ui.editor.graph.getSelectionCell() || ui.editor.graph.getModel().getRoot();
-		
-		if (cell != null)
-		{
-			var dlg = new EditDataDialog(ui, cell);
-			ui.showDialog(dlg.container, 600, 320, true, false);
+  ui.actions.addAction('editData...', function()
+  {
+    var cell = ui.editor.graph.getSelectionCell() || ui.editor.graph.getModel().getRoot();
+
+    if (cell != null)
+    {
+      var dlg = new EditDataDialog(ui, cell);
+      ui.showDialog(dlg.container, 600, 320, true, false);
       dlg.container.parentNode.style.resize = 'both';
-			dlg.init();
-		}
-	}, null, null, 'Ctrl+M');
+      dlg.init();
+    }
+  }, null, null, 'Ctrl+M');
 
   ui.actions.addAction('awssfValidate', function()
   {
@@ -1668,13 +1740,14 @@ Draw.loadPlugin(function(ui) {
     if (!ui.editor.graph.getModel().cells) return;
     var cell = ui.editor.graph.getModel().getRoot();
     if (cell && (cell.value == null)){
-      cell.value = mxUtils.createXmlDocument().createElement('object');    
+      cell.value = mxUtils.createXmlDocument().createElement('object');
       if (cell.getAttribute("type") == null) cell.setAttribute("type", "awssfRoot");
       if (cell.getAttribute("name") == null) cell.setAttribute("name", "");
       if (cell.getAttribute("comment") == null) cell.setAttribute("comment", "");
       if (cell.getAttribute("timeout_seconds") == null) cell.setAttribute("timeout_seconds", "");
       if (cell.getAttribute("version") == null) cell.setAttribute("version", "");
       if (cell.getAttribute("role_arn") == null) cell.setAttribute("role_arn", "");
+      if (cell.getAttribute("state_machine_arn") == null) cell.setAttribute("state_machine_arn", "");
       cell.awssf = {};
     }
     return;
@@ -1714,20 +1787,28 @@ Draw.loadPlugin(function(ui) {
   ui.actions.addAction('awssfExportJSON', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(JSON.stringify(data, null, "  "), true);
+    popup("Export as JSON", JSON.stringify(data, null, "  "));
   });
 
   ui.actions.addAction('awssfExportYAML', function()
   {
     var data = getStepFunctionDefinition();
-    mxUtils.popup(jsyaml.dump(data), true);
+    popup("Export as YAML", jsyaml.dump(data));
   });
 
   ui.actions.addAction('awssfExport', function()
   {
     var encoder = new mxCodec();
     var node = encoder.encode(ui.editor.graph.getModel());
-    mxUtils.popup(mxUtils.getPrettyXml(node), true);
+    popup("Export as XML for draw.io", mxUtils.getPrettyXml(node));
+  });
+
+  ui.actions.addAction('awssfImport', function()
+  {
+    var dlg = new awssfImportDialog(ui, 'Import Definition');
+    ui.showDialog(dlg.container, 700, 500, true, false);
+    dlg.container.parentNode.style.resize = 'both';
+    dlg.init();
   });
 
   function setupAWSconfig(){
@@ -1740,7 +1821,11 @@ Draw.loadPlugin(function(ui) {
       return false;
     }
     var awsconfig = codec.decode(found);
-    AWS.config.update({accessKeyId: awsconfig.getAttribute('accessKeyId'), secretAccessKey: awsconfig.getAttribute('secretAccessKey'), region: awsconfig.getAttribute('region')});
+    var params = {accessKeyId: awsconfig.getAttribute('accessKeyId'), secretAccessKey: awsconfig.getAttribute('secretAccessKey'), region: awsconfig.getAttribute('region')}
+    AWS.config.update(params);
+    if (typeof __updateAWSconfig !== "undefined") {
+      __updateAWSconfig(params)
+    }
     return true;
   }
 
@@ -1748,8 +1833,8 @@ Draw.loadPlugin(function(ui) {
     var sts = new AWS.STS({apiVersion: '2011-06-15'});
     sts.getCallerIdentity({}, function(err, data) {
       if (err) console.log(err, err.stack); // an error occurred
-      else callback(data); 
-    });    
+      else callback(data);
+    });
   }
 
   function getResourceList(callback){
@@ -1779,41 +1864,472 @@ Draw.loadPlugin(function(ui) {
   }
 
   function isSupproted(){
-    var sdk_supported = (typeof(AWS) == "object") && (typeof(AWS.StepFunctions) == "object");
-    var cors_supported = false;
-    return sdk_supported && cors_supported;
+    return awssfUtils.inCarlo();
   }
 
   ui.actions.addAction('awssfDeploy', function()
   {
-    if (!setupAWSconfig()) return;
-    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-    getCallerIdentity(function(data){
-      var params = {
-        definition: JSON.stringify(getStepFunctionDefinition()),
-        name: ui.editor.graph.getModel().cells[0].getAttribute("name"),
-        roleArn: ui.editor.graph.getModel().cells[0].getAttribute("role_arn")
-      }; 
-      stepfunctions.createStateMachine(params, function(err, data) {
-        if (data) console.log(err, err.stack); // an error occurred
-        else     console.log(data);           // successful response
-      });    
-    });
+    if (!(awssfUtils.inCarlo() && setupAWSconfig())) return;
+    var dlg = new awssfDeployDialog(ui, 'Deploy StateMachine Definition');
+    ui.showDialog(dlg.container, 800, 600, true, false);
+    dlg.container.parentNode.style.resize = 'both';
+    dlg.init();
   }).isEnabled = isSupproted;
 
-  ui.actions.addAction('awssfInvoke', function()
+  var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
   {
-    if (!setupAWSconfig()) return;
-    var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
-  }).isEnabled = isSupproted;  
+    ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfImport', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport', '-', 'awssfDeploy']);
+  });
 
-	var menu = ui.menubar.addMenu('StepFunctions', function(menu, parent)
-	{
-		ui.menus.addMenuItems(menu, ['-', 'awssfValidate', '-', 'awssfExportJSON', 'awssfExportYAML', 'awssfExport' , '-', 'awssfDeploy', 'awssfInvoke']);
-	});
-	
-	// Inserts voice menu before help menu
-	var menu = menu.parentNode.insertBefore(menu, menu.previousSibling.previousSibling.previousSibling);
+  // Inserts StepFunctions menu before help menu
+  var menu = menu.parentNode.insertBefore(menu, menu.previousSibling.previousSibling.previousSibling);
 
+  var awssfImportDialog = function(editorUi, title)
+  {
+    var graph = editorUi.editor.graph;
 
+    function recurseStates(states){
+      var res = {hash: {}, list: []};
+      var cell;
+      for (var name in states) {
+        var body = states[name]
+        if (body.Type === "Pass") {
+          cell = PassState.prototype.create(name, body);
+        } else if (body.Type === "Task") {
+          cell = TaskState.prototype.create(name, body);
+        } else if (body.Type === "Choice") {
+          cell = ChoiceState.prototype.create(name, body);
+        } else if (body.Type === "Wait") {
+          cell = WaitState.prototype.create(name, body);
+        } else if (body.Type === "Succeed") {
+          cell = SucceedState.prototype.create(name, body);
+        } else if (body.Type === "Fail") {
+          cell = FailState.prototype.create(name, body);
+        } else if (body.Type === "Parallel") {
+          cell = ParallelState.prototype.create(name, body);
+          for(var branch in body.Branches) {
+            var _sub = recurseStates(body.Branches[branch].States)
+            for(var _cell of _sub.list) cell.insert(_cell)
+            Object.assign(res.hash, _sub.hash)
+          }
+        }
+        res.hash[name] = cell;
+        res.list.push(cell);
+      }
+      return res;
+    }
+
+    function recurseEdges(json, vertexes, sp, ep){
+      var res = [];
+      if (json.StartAt && sp) {
+        var edge = StartAtEdge.prototype.create()
+        edge.source = sp
+        edge.target = vertexes[json.StartAt]
+        res.push(edge);
+      }
+      for (var name in json.States) {
+        var body = json.States[name]
+        if (body.Default && vertexes[body.Default]){
+          var edge = DefaultEdge.prototype.create('Default', vertexes[name], vertexes[body.Default]);
+          res.push(edge)
+        }
+        if (body.Next && vertexes[body.Next]) {
+          edge = NextEdge.prototype.create('Next', vertexes[name], vertexes[body.Next]);
+          res.push(edge)
+        }
+        if (body.End || (body.Type && body.Type.match(/(Succeed|Fail)/))) {
+          if (ep) {
+            var edge = NextEdge.prototype.create('Next', vertexes[name], ep);
+            res.push(edge)
+          }
+        }
+        if (body.Retry) {
+          for (var r in body.Retry) {
+            var edge = RetryEdge.prototype.create('Retry', vertexes[name], body.Retry[r], body.Retry.length - r);
+            res.push(edge)
+          }
+        }
+        if (body.Catch && body.Catch.length > 0) {
+          for (var i in body.Catch) {
+            var edge = CatchEdge.prototype.create('Catch', vertexes[name], vertexes[body.Catch[i].Next], body.Catch[i], body.Catch.length - i);
+            res.push(edge)
+          }
+        }
+        if (body.Choices && body.Choices.length > 0) {
+          for (var i in body.Choices) {
+            var edge = ChoiceEdge.prototype.create('Choice', vertexes[name], vertexes[body.Choices[i].Next], body.Choices[i], body.Choices.length - i);
+            res.push(edge)
+          }
+        }
+        if (body.Type === "Parallel") {
+          for(var branch in body.Branches) {
+            var _sp = vertexes[name].getChildAt(0);
+            var tmp = recurseEdges(body.Branches[branch], vertexes, _sp);
+            tmp.map(v => vertexes[name].insert(v))
+          }
+        }
+      }
+      return res;
+    }
+
+    function parse(text)
+    {
+      var json;
+      if (text[0] === '{') {
+        json = JSON.parse(text.trim());
+      } else {
+        json = jsyaml.load(text.trim());
+      }
+      var root = graph.getModel().getRoot();
+      root.setAttribute("comment", json.Comment || "");
+      root.setAttribute("timeout_seconds", json.TimeoutSeconds || "");
+      root.setAttribute("version", json.Version || "");
+      var res = recurseStates(json.States);
+      var inserted = res.list;
+      var vertexes = res.hash;
+      var sp = StartPoint.prototype.create();
+      inserted.unshift(sp);
+      var ep = EndPoint.prototype.create();
+      inserted.push(ep)
+      var tmp = recurseEdges(json, vertexes, sp, ep);
+      inserted.push(...tmp);
+      graph.getModel().beginUpdate();
+      try
+      {
+        graph.addCells(inserted)
+        graph.fireEvent(new mxEventObject('cellsInserted', 'cells', inserted));
+      }
+      finally
+      {
+        graph.getModel().endUpdate();
+      }
+      return inserted;
+    }
+
+    function executeLayout (cells)
+    {
+      graph.setSelectionCells(cells);
+      graph.getModel().beginUpdate();
+      try
+      {
+        var parallels = cells.filter(function(v) { return v.awssf.type === "Parallel" });
+        var parallelLayout = new mxCompactTreeLayout(graph, false);
+        parallelLayout.edgeRouting = false;
+        parallelLayout.levelDistance = 30;
+        for (var p in parallels) {
+          parallelLayout.execute(parallels[p], parallels[p].getChildAt(0));
+        }
+        var layout = new mxHierarchicalLayout(graph, mxConstants.DIRECTION_NORTH);
+        layout.intraCellSpacing = 40;
+        layout.interRankCellSpacing = 40;
+        layout.interHierarchySpacing = 40;
+        layout.parallelEdgeSpacing = 10;
+        layout.execute(graph.getDefaultParent(), [cells[0]]);
+      }
+      catch (e)
+      {
+        throw e;
+      }
+      finally
+      {
+        // New API for animating graph layout results asynchronously
+        var morph = new mxMorphing(graph);
+        morph.addListener(mxEvent.DONE, mxUtils.bind(this, function()
+        {
+          graph.getModel().endUpdate();
+        }));
+        morph.startAnimation();
+      }
+    }
+
+    var div = document.createElement('div');
+    var h3 = document.createElement('h2');
+    mxUtils.write(h3, title);
+    h3.style.marginTop = '0px';
+    h3.style.marginBottom = '24px';
+    div.appendChild(h3);
+    var span = document.createElement('span');
+    mxUtils.write(span, 'Paste statemachine definition JSON or YAML');
+    div.appendChild(span);
+
+    var form = new mxForm('properties');
+    form.table.style.width = '100%';
+    form.table.style.paddingRight = '20px';
+    var defaultValue = '';
+    var textarea = form.addTextarea('', defaultValue, 25)
+    textarea.style.width = '100%';
+    textarea.style.marginBottom = '16px';
+    div.appendChild(form.table);
+
+    var form2 = new mxForm('properties');
+    form2.table.style.width = '100%';
+    form2.table.style.paddingRight = '20px';
+    var colgroupName = document.createElement('colgroup');
+    colgroupName.width = '120';
+    form2.table.insertBefore(colgroupName, form2.body);
+    var colgroupValue = document.createElement('colgroup');
+    form2.table.insertBefore(colgroupValue, form2.body);
+
+    var select = document.createElement('select');
+    form2.addField('StateMachine:', select)
+    if (awssfUtils.inCarlo() && setupAWSconfig()) {
+      __listStateMachines().then(function(data) {
+        for (var j in data.stateMachines){
+          var option = document.createElement('option');
+          mxUtils.writeln(option, data.stateMachines[j].name);
+          option.setAttribute('value', data.stateMachines[j].stateMachineArn);
+          select.appendChild(option);
+        }
+      });
+      mxEvent.addListener(select, 'change', function()
+      {
+        __describeStateMachine(select.value).then(function(newData) {
+          if (textarea.value.length == 0 || textarea.value == defaultValue)
+          {
+            defaultValue = newData.definition;
+            textarea.value = defaultValue;
+          }
+        });
+      });
+    } else {
+      var option = document.createElement('option');
+      mxUtils.writeln(option, 'Select a StateMachine...');
+      select.appendChild(option);
+      select.disabled = true
+    }
+    div.appendChild(form2.table);
+    var buttons = document.createElement('div');
+    buttons.style.marginTop = '18px';
+    buttons.style.textAlign = 'right';
+    this.init = function()
+    {
+      textarea.focus();
+    };
+    var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
+    {
+      if (textarea.value == defaultValue)
+      {
+        editorUi.hideDialog();
+      }
+      else
+      {
+        editorUi.confirm(mxResources.get('areYouSure'), function()
+        {
+          editorUi.hideDialog();
+        });
+      }
+    });
+
+    cancelBtn.className = 'geBtn';
+
+    if (editorUi.editor.cancelFirst)
+    {
+      buttons.appendChild(cancelBtn);
+    }
+
+    var okBtn = mxUtils.button(mxResources.get('awssfImportBtn'), function()
+    {
+      try {
+        var cells = parse(textarea.value);
+        editorUi.hideDialog();
+        executeLayout(cells);
+      }catch(err){
+        alert(err)
+      }
+    });
+    buttons.appendChild(okBtn);
+
+    okBtn.className = 'geBtn gePrimaryBtn';
+
+    if (!editorUi.editor.cancelFirst)
+    {
+      buttons.appendChild(cancelBtn);
+    }
+    div.appendChild(buttons)
+    this.container = div;
+  }
+
+  var awssfDeployDialog = function(editorUi, title)
+  {
+    var graph = editorUi.editor.graph;
+    var params = {
+      definition: JSON.stringify(getStepFunctionDefinition()),
+      name: graph.getModel().cells[0].getAttribute("name") || "",
+      roleArn: graph.getModel().cells[0].getAttribute("role_arn") || "",
+      stateMachineArn: graph.getModel().cells[0].getAttribute("state_machine_arn") || ""
+    };
+
+    var div = document.createElement('div');
+
+    var h3 = document.createElement('h2');
+    mxUtils.write(h3, title);
+    h3.style.marginTop = '0px';
+    h3.style.marginBottom = '24px';
+    div.appendChild(h3);
+
+    var form = new mxForm('properties');
+    form.table.style.width = '100%';
+    form.table.style.paddingRight = '20px';
+    var colgroupName = document.createElement('colgroup');
+    colgroupName.width = '120';
+    form.table.insertBefore(colgroupName, form.body);
+    var colgroupValue = document.createElement('colgroup');
+    form.table.insertBefore(colgroupValue, form.body);
+
+    var select = document.createElement('select');
+    var defaultOption = document.createElement('option');
+    mxUtils.writeln(defaultOption, 'Create a new statemachine');
+    defaultOption.setAttribute('selected', true);
+    select.appendChild(defaultOption);
+    defaultOption.setAttribute('value', '__CREATE__');
+    __listStateMachines().then(function(data) {
+      for (var j in data.stateMachines){
+        var option = document.createElement('option');
+        mxUtils.writeln(option, data.stateMachines[j].name);
+        option.setAttribute('value', data.stateMachines[j].stateMachineArn);
+        if (params.stateMachineArn == data.stateMachines[j].stateMachineArn){
+          option.setAttribute('selected', true);
+        }
+        select.appendChild(option);
+      }
+    });
+    form.addField('StateMachine:', select)
+
+    mxEvent.addListener(select, 'change', function()
+    {
+      __describeStateMachine(select.value).then(function(data) {
+        if (textarea.value.length == 0 || textarea.value == defaultValue)
+        {
+          arnInput.value = data.stateMachineArn
+          nameInput.value = data.name
+          roleInput.value = data.roleArn
+        }
+      });
+    });
+
+    var arnInput = form.addText('StaeMachineArn:', params.stateMachineArn);
+    arnInput.style.width = '100%';
+
+    var nameInput = form.addText('Name:', params.name);
+    nameInput.style.width = '100%';
+
+    var roleInput = form.addText('Role:', params.roleArn)
+    roleInput.style.width = '100%';
+
+    var defaultValue = params.definition;
+    var textarea = form.addTextarea('Definition:', defaultValue, 30)
+    textarea.style.width = '100%';
+
+    div.appendChild(form.table);
+    var buttons = document.createElement('div');
+    buttons.style.marginTop = '18px';
+    buttons.style.textAlign = 'right';
+
+    this.init = function()
+    {
+      nameInput.focus();
+    };
+    var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
+    {
+      if (textarea.value == defaultValue)
+      {
+        editorUi.hideDialog();
+      }
+      else
+      {
+        editorUi.confirm(mxResources.get('areYouSure'), function()
+        {
+          editorUi.hideDialog();
+        });
+      }
+    });
+
+    cancelBtn.className = 'geBtn';
+
+    if (editorUi.editor.cancelFirst)
+    {
+      buttons.appendChild(cancelBtn);
+    }
+
+    var okBtn = mxUtils.button(mxResources.get('awssfDeployBtn'), function()
+    {
+      var params = {
+        name: nameInput.value,
+        definition: textarea.value,
+        roleArn: roleInput.value
+      }
+      if (select.value !== '__CREATE__') {
+        params.stateMachineArn = arnInput.value
+        delete params.name
+        if (!params.roleArn) delete params.roleArn
+        if (!params.definition) delete params.definition
+      }
+      __deployStateMachine(params).then(() => {
+        editorUi.hideDialog();
+      }).catch(err => {
+        alert(err.message)
+      })
+    });
+    buttons.appendChild(okBtn);
+
+    okBtn.className = 'geBtn gePrimaryBtn';
+
+    if (!editorUi.editor.cancelFirst)
+    {
+      buttons.appendChild(cancelBtn);
+    }
+    div.appendChild(buttons)
+    this.container = div;
+  }
+
+  var awssfExportDialog = function(editorUi, title, value) {
+    var div = document.createElement('div');
+
+    var h3 = document.createElement('h2');
+    mxUtils.write(h3, title);
+    h3.style.marginTop = '0px';
+    h3.style.marginBottom = '24px';
+    div.appendChild(h3);
+    var form = new mxForm('properties');
+    form.table.style.width = '100%';
+    form.table.style.paddingRight = '20px';
+    var textarea = form.addTextarea('', value, 25)
+    textarea.style.width = '100%';
+    textarea.style.marginBottom = '16px';
+    textarea.readOnly = true;
+    div.appendChild(form.table);
+    var buttons = document.createElement('div');
+    buttons.style.marginTop = '18px';
+    buttons.style.textAlign = 'right';
+    this.init = function() {
+      textarea.focus();
+      textarea.scrollTop = 0;
+    };
+    var copyBtn = mxUtils.button(mxResources.get('copy'), function() {
+      const range = document.createRange()
+      range.selectNode(textarea)
+      const selection = document.getSelection()
+      selection.removeAllRanges()
+      selection.addRange(range)
+      document.execCommand('copy')
+      range.detach();
+    });
+    copyBtn.className = 'geBtn gePrimaryBtn';
+    buttons.appendChild(copyBtn);
+
+    var cancelBtn = mxUtils.button(mxResources.get('close'), function() {
+      editorUi.hideDialog();
+    });
+    cancelBtn.className = 'geBtn';
+    buttons.appendChild(cancelBtn);
+    div.appendChild(buttons)
+    this.container = div;
+  }
+
+  function popup(title, src) {
+    var dlg = new awssfExportDialog(ui, title, src);
+    ui.showDialog(dlg.container, 700, 500, true, false);
+    dlg.container.parentNode.style.resize = 'both';
+    dlg.init();
+  }
 });
