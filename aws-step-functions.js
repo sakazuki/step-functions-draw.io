@@ -363,7 +363,7 @@ Draw.loadPlugin(function(ui) {
 
 
 
-  var StartPoint = function(){};
+  StartPoint = function(){};
   StartPoint.prototype.type = 'Start';
   StartPoint.prototype.create = function(geometry){
     var cell = createPoint(this, StartPoint, geometry);
@@ -373,7 +373,7 @@ Draw.loadPlugin(function(ui) {
     return StartAtEdge.prototype.create();
   }
 
-  var EndPoint = function(){};
+  EndPoint = function(){};
   EndPoint.prototype.type = 'End';
   EndPoint.prototype.create = function(){
     var cell = createPoint(this, EndPoint);
@@ -393,7 +393,7 @@ Draw.loadPlugin(function(ui) {
     return cell;
   }
 
-  var AWSconfig = function(){};
+  AWSconfig = function(){};
   AWSconfig.prototype.create = function(){
     return createAWSconfig(this);
   }
@@ -480,7 +480,7 @@ Draw.loadPlugin(function(ui) {
   PassState.prototype.handler = PassStateHandler;
   mxUtils.extend(PassStateHandler, awssfStateHandler);
 
-  var TaskState = function(){};
+  TaskState = function(){};
   TaskState.prototype.type = 'Task';
   TaskState.prototype.create = function(label, json){
     if (!json) json = {};
@@ -814,7 +814,7 @@ Draw.loadPlugin(function(ui) {
   mxUtils.extend(WaitStateHandler, awssfStateHandler);
 
 
-  var SucceedState = function(){};
+  SucceedState = function(){};
   SucceedState.prototype.type = 'Succeed';
   SucceedState.prototype.create = function(label, json){
     if (!json) json = {};
@@ -847,7 +847,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(SucceedState);
   SucceedState.prototype.handler = awssfStateHandler;
 
-  var FailState = function(){};
+  FailState = function(){};
   FailState.prototype.type = 'Fail';
   FailState.prototype.create = function(label, json){
     if (!json) json = {};
@@ -888,7 +888,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(FailState);
   FailState.prototype.handler = awssfStateHandler;
 
-  var ParallelState = function(){};
+  ParallelState = function(){};
   ParallelState.prototype.type = 'Parallel';
   ParallelState.prototype.create = function(label, json){
     if (!json) json = {};
@@ -1047,7 +1047,7 @@ Draw.loadPlugin(function(ui) {
     return cell;
   }
 
-  var StartAtEdge = function(){};
+  StartAtEdge = function(){};
   StartAtEdge.prototype.type = 'StartAt';
   StartAtEdge.prototype.create = function(label, source, target){
     if (label == null ) label = this.type;
@@ -1075,7 +1075,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(StartAtEdge);
 
 
-  var NextEdge = function(){};
+  NextEdge = function(){};
   NextEdge.prototype.type = 'Next';
   NextEdge.prototype.create = function(label, source, target){
     if (label == null ) label = this.type;
@@ -1107,7 +1107,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(NextEdge);
 
 
-  var RetryEdge = function(){};
+  RetryEdge = function(){};
   RetryEdge.prototype.type = 'Retry';
   RetryEdge.prototype.create = function(label, source, json, weight){
     if (label == null ) label = this.type;
@@ -1165,7 +1165,7 @@ Draw.loadPlugin(function(ui) {
   RetryEdge.prototype.handler = awssfEdgeHandler;
   registCodec(RetryEdge);
 
-  var CatchEdge = function(){};
+  CatchEdge = function(){};
   CatchEdge.prototype.type = 'Catch';
   CatchEdge.prototype.create = function(label, source, target, json, weight){
     if (label == null ) label = this.type;
@@ -1208,7 +1208,7 @@ Draw.loadPlugin(function(ui) {
   CatchEdge.prototype.handler = awssfEdgeHandler;
   registCodec(CatchEdge);
 
-  var ChoiceEdge = function(){};
+  ChoiceEdge = function(){};
   ChoiceEdge.prototype.type = 'Choice';
   ChoiceEdge.prototype.create = function(label, source, target, json, weight){
     if (label == null ) label = this.type;
