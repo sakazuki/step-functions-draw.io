@@ -225,20 +225,22 @@ Draw.loadPlugin(function(ui) {
     var codec = new mxObjectCodec(new func());
     codec.encode = function(enc, obj){
       try{
+        console.log("encode", enc, obj, func.name)
         var data = enc.document.createElement(func.name);
       }catch(e){
-
+        console.log("encode error", e)
       }
       return data
     };
     codec.decode = function(dec, node, into){
+      console.log("decode", dec, node, into)
       return new func();
     };
     mxCodecRegistry.register(codec);
   }
 
-  function createPoint(awssf, state, geometry){
-    var label = state.prototype.type;
+  function createPoint(awssf, geometry){
+    var label = awssf.type;
     if (geometry == null) {
       var pt = (graph.isMouseInsertPoint()) ? graph.getInsertPoint() : graph.getFreeInsertPoint();
       geometry = new mxGeometry(pt.x, pt.y, 40, 40);
@@ -363,20 +365,20 @@ Draw.loadPlugin(function(ui) {
 
 
 
-  var StartPoint = function(){};
+  StartPoint = function(){};
   StartPoint.prototype.type = 'Start';
   StartPoint.prototype.create = function(geometry){
-    var cell = createPoint(this, StartPoint, geometry);
+    var cell = createPoint(this, geometry);
     return cell;
   }
   StartPoint.prototype.create_default_edge = function(){
     return StartAtEdge.prototype.create();
   }
 
-  var EndPoint = function(){};
+  EndPoint = function(){};
   EndPoint.prototype.type = 'End';
   EndPoint.prototype.create = function(){
-    var cell = createPoint(this, EndPoint);
+    var cell = createPoint(this);
     return cell;
   }
 
@@ -393,7 +395,7 @@ Draw.loadPlugin(function(ui) {
     return cell;
   }
 
-  var AWSconfig = function(){};
+  AWSconfig = function(){};
   AWSconfig.prototype.create = function(){
     return createAWSconfig(this);
   }
@@ -480,7 +482,7 @@ Draw.loadPlugin(function(ui) {
   PassState.prototype.handler = PassStateHandler;
   mxUtils.extend(PassStateHandler, awssfStateHandler);
 
-  var TaskState = function(){};
+  TaskState = function(){};
   TaskState.prototype.type = 'Task';
   TaskState.prototype.create = function(label, json){
     if (!json) json = {};
@@ -814,7 +816,7 @@ Draw.loadPlugin(function(ui) {
   mxUtils.extend(WaitStateHandler, awssfStateHandler);
 
 
-  var SucceedState = function(){};
+  SucceedState = function(){};
   SucceedState.prototype.type = 'Succeed';
   SucceedState.prototype.create = function(label, json){
     if (!json) json = {};
@@ -847,7 +849,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(SucceedState);
   SucceedState.prototype.handler = awssfStateHandler;
 
-  var FailState = function(){};
+  FailState = function(){};
   FailState.prototype.type = 'Fail';
   FailState.prototype.create = function(label, json){
     if (!json) json = {};
@@ -888,12 +890,12 @@ Draw.loadPlugin(function(ui) {
   registCodec(FailState);
   FailState.prototype.handler = awssfStateHandler;
 
-  var ParallelState = function(){};
+  ParallelState = function(){};
   ParallelState.prototype.type = 'Parallel';
   ParallelState.prototype.create = function(label, json){
     if (!json) json = {};
-    var cell = createState(this, label);
-    cell.setStyle('swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none');
+    var style = 'swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none';
+    var cell = createState(this, label, style);
     var pt = cell.getGeometry();
     cell.setGeometry(new mxGeometry(pt.x, pt.y, 480, 200));
     cell.setAttribute('result_path', json.ResultPath || '');
@@ -1047,7 +1049,7 @@ Draw.loadPlugin(function(ui) {
     return cell;
   }
 
-  var StartAtEdge = function(){};
+  StartAtEdge = function(){};
   StartAtEdge.prototype.type = 'StartAt';
   StartAtEdge.prototype.create = function(label, source, target){
     if (label == null ) label = this.type;
@@ -1075,7 +1077,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(StartAtEdge);
 
 
-  var NextEdge = function(){};
+  NextEdge = function(){};
   NextEdge.prototype.type = 'Next';
   NextEdge.prototype.create = function(label, source, target){
     if (label == null ) label = this.type;
@@ -1107,7 +1109,7 @@ Draw.loadPlugin(function(ui) {
   registCodec(NextEdge);
 
 
-  var RetryEdge = function(){};
+  RetryEdge = function(){};
   RetryEdge.prototype.type = 'Retry';
   RetryEdge.prototype.create = function(label, source, json, weight){
     if (label == null ) label = this.type;
@@ -1165,7 +1167,7 @@ Draw.loadPlugin(function(ui) {
   RetryEdge.prototype.handler = awssfEdgeHandler;
   registCodec(RetryEdge);
 
-  var CatchEdge = function(){};
+  CatchEdge = function(){};
   CatchEdge.prototype.type = 'Catch';
   CatchEdge.prototype.create = function(label, source, target, json, weight){
     if (label == null ) label = this.type;
@@ -1208,7 +1210,7 @@ Draw.loadPlugin(function(ui) {
   CatchEdge.prototype.handler = awssfEdgeHandler;
   registCodec(CatchEdge);
 
-  var ChoiceEdge = function(){};
+  ChoiceEdge = function(){};
   ChoiceEdge.prototype.type = 'Choice';
   ChoiceEdge.prototype.create = function(label, source, target, json, weight){
     if (label == null ) label = this.type;
@@ -1258,7 +1260,7 @@ Draw.loadPlugin(function(ui) {
   ChoiceEdge.prototype.handler = awssfEdgeHandler;
   registCodec(ChoiceEdge);
 
-  var DefaultEdge = function DefaultEdge(){};
+  DefaultEdge = function DefaultEdge(){};
   DefaultEdge.prototype.type = 'Default';
   DefaultEdge.prototype.create = function(label, source, target){
     if (label == null ) label = this.type;
