@@ -237,7 +237,7 @@ Draw.loadPlugin(function(ui) {
     mxCodecRegistry.register(codec);
   }
 
-  function creaftePoint(awssf, geometry){
+  function createPoint(awssf, geometry){
     var label = awssf.type;
     if (geometry == null) {
       var pt = (graph.isMouseInsertPoint()) ? graph.getInsertPoint() : graph.getFreeInsertPoint();
