@@ -237,8 +237,8 @@ Draw.loadPlugin(function(ui) {
     mxCodecRegistry.register(codec);
   }
 
-  function createPoint(awssf, state, geometry){
-    var label = state.prototype.type;
+  function creaftePoint(awssf, geometry){
+    var label = awssf.type;
     if (geometry == null) {
       var pt = (graph.isMouseInsertPoint()) ? graph.getInsertPoint() : graph.getFreeInsertPoint();
       geometry = new mxGeometry(pt.x, pt.y, 40, 40);
@@ -366,7 +366,7 @@ Draw.loadPlugin(function(ui) {
   StartPoint = function(){};
   StartPoint.prototype.type = 'Start';
   StartPoint.prototype.create = function(geometry){
-    var cell = createPoint(this, StartPoint, geometry);
+    var cell = createPoint(this, geometry);
     return cell;
   }
   StartPoint.prototype.create_default_edge = function(){
@@ -376,7 +376,7 @@ Draw.loadPlugin(function(ui) {
   EndPoint = function(){};
   EndPoint.prototype.type = 'End';
   EndPoint.prototype.create = function(){
-    var cell = createPoint(this, EndPoint);
+    var cell = createPoint(this);
     return cell;
   }
 
@@ -892,8 +892,8 @@ Draw.loadPlugin(function(ui) {
   ParallelState.prototype.type = 'Parallel';
   ParallelState.prototype.create = function(label, json){
     if (!json) json = {};
-    var cell = createState(this, label);
-    cell.setStyle('swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none');
+    var style = 'swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none';
+    var cell = createState(this, label, style);
     var pt = cell.getGeometry();
     cell.setGeometry(new mxGeometry(pt.x, pt.y, 480, 200));
     cell.setAttribute('result_path', json.ResultPath || '');
@@ -1258,7 +1258,7 @@ Draw.loadPlugin(function(ui) {
   ChoiceEdge.prototype.handler = awssfEdgeHandler;
   registCodec(ChoiceEdge);
 
-  var DefaultEdge = function DefaultEdge(){};
+  DefaultEdge = function DefaultEdge(){};
   DefaultEdge.prototype.type = 'Default';
   DefaultEdge.prototype.create = function(label, source, target){
     if (label == null ) label = this.type;
