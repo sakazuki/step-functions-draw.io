@@ -4,13 +4,22 @@ const fs = require('fs');
 
 (async () => {
   const app = await carlo.launch();
-
-  app.on('exit', () => process.exit());
+  let closing = false;
+  app.on('exit', () => {
+    closing = true
+    process.exit()
+  });
   app.serveHandler(request => {
-    if (request.url().endsWith('/aws-step-functions.js'))
-      request.fulfill({body: fs.readFileSync('./aws-step-functions.js')});
-    else
-      request.continue();
+    try {
+      if (request.url().endsWith('/aws-step-functions.js'))
+        request.fulfill({body: fs.readFileSync('./aws-step-functions.js')});
+      else
+        request.continue();
+    } catch(err) {
+      if (!closing) {
+        console.error(err)
+      }
+    }
   });
   // app.serveOrigin("http://localhost:8080")
   app.serveFolder(__dirname);
