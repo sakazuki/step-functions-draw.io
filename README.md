@@ -59,7 +59,7 @@
 - Put a frequent useful pattern into [Scratchpad].
 
 
-## Desktop version
+## Direct version
 
 1. Download binary from [Releases page](https://github.com/sakazuki/step-functions-draw.io/releases)
 1. Execute **step-functions-drawio-desktop.exe** or **step-functions-drawio-desktop-macos**
