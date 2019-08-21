@@ -17,11 +17,10 @@ const fs = require('fs');
         request.continue();
     } catch(err) {
       if (!closing) {
-        console.error(err)
+        console.error(">>>", err)
       }
     }
   });
-  // app.serveOrigin("http://localhost:8080")
   app.serveFolder(__dirname);
 
   await app.load('https://www.draw.io');
