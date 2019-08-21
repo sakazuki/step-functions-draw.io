@@ -57,3 +57,15 @@
 ## Useful TIPS
 - Put a inputed AWSconfig into [Scratchpad].
 - Put a frequent useful pattern into [Scratchpad].
+
+
+## Desktop version
+
+1. Download binary from [Releases page](https://github.com/sakazuki/step-functions-draw.io/releases)
+1. Execute **step-functions-drawio-desktop.exe** or **step-functions-drawio-desktop-macos**
+1. Select Save Option (ex. Decide Later...)
+1. Select Menu [Extras]-[Plugins]
+1. Click [Add]
+1. Input https://localhost/aws-step-functions.js
+1. [Apply]
+1. Reload the page (Right click on a header part, and select reload menu.)

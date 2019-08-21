@@ -227,7 +227,7 @@ Draw.loadPlugin(function(ui) {
       try{
         var data = enc.document.createElement(func.name);
       }catch(e){
-
+        console.log("encode error", e)
       }
       return data
     };
@@ -2153,7 +2153,7 @@ Draw.loadPlugin(function(ui) {
   {
     var graph = editorUi.editor.graph;
     var params = {
-      definition: JSON.stringify(getStepFunctionDefinition()),
+      definition: JSON.stringify(getStepFunctionDefinition(), null, "  "),
       name: graph.getModel().cells[0].getAttribute("name") || "",
       roleArn: graph.getModel().cells[0].getAttribute("role_arn") || "",
       stateMachineArn: graph.getModel().cells[0].getAttribute("state_machine_arn") || ""
@@ -2332,4 +2332,12 @@ Draw.loadPlugin(function(ui) {
     dlg.container.parentNode.style.resize = 'both';
     dlg.init();
   }
+
+  var forceReloadScratchPad = function(...v) {
+    console.log(">>reload scratchpad", ...v)
+    ui.toggleScratchpad();
+    ui.toggleScratchpad();
+  }
+
+  ui.addListener('clientLoaded', forceReloadScratchPad);
 });
