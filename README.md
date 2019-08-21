@@ -14,7 +14,7 @@
 1. Select Save Option (ex. Decide Later...)
 1. Select Menu [Extras]-[Plugins]
 1. Click [Add]
-1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.2/aws-step-functions.js
+1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.3/aws-step-functions.js
 1. [Apply]
 1. Reload the page
 
@@ -66,6 +66,6 @@
 1. Select Save Option (ex. Decide Later...)
 1. Select Menu [Extras]-[Plugins]
 1. Click [Add]
-1. Input https://localhost/aws-step-functions.js
+1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.3/aws-step-functions.js
 1. [Apply]
 1. Reload the page (Right click on a header part, and select reload menu.)
