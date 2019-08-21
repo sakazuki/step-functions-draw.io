@@ -62,7 +62,7 @@
 ## Direct version
 
 1. Download binary from [Releases page](https://github.com/sakazuki/step-functions-draw.io/releases)
-1. Execute **step-functions-drawio-desktop.exe** or **step-functions-drawio-desktop-macos**
+1. Execute **step-functions-app.exe** or **step-functions-app-macos**
 1. Select Save Option (ex. Decide Later...)
 1. Select Menu [Extras]-[Plugins]
 1. Click [Add]
