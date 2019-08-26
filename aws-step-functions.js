@@ -1939,7 +1939,7 @@ Draw.loadPlugin(function(ui) {
         }
         if (body.End || (body.Type && body.Type.match(/(Succeed|Fail)/))) {
           if (ep) {
-            var edge = NextEdge.prototype.create('Next', vertexes[name], ep);
+            var edge = NextEdge.prototype.create('', vertexes[name], ep);
             res.push(edge)
           }
         }
@@ -2069,8 +2069,11 @@ Draw.loadPlugin(function(ui) {
     form2.table.insertBefore(colgroupName, form2.body);
     var colgroupValue = document.createElement('colgroup');
     form2.table.insertBefore(colgroupValue, form2.body);
-
     var select = document.createElement('select');
+    var option = document.createElement('option');
+    mxUtils.writeln(option, 'Select a StateMachine...');
+    option.setAttribute('selected', true);
+    select.appendChild(option);
     form2.addField('StateMachine:', select)
     if (awssfUtils.inCarlo() && setupAWSconfig()) {
       __listStateMachines().then(function(data) {
@@ -2092,9 +2095,6 @@ Draw.loadPlugin(function(ui) {
         });
       });
     } else {
-      var option = document.createElement('option');
-      mxUtils.writeln(option, 'Select a StateMachine...');
-      select.appendChild(option);
       select.disabled = true
     }
     div.appendChild(form2.table);

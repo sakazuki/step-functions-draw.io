@@ -1,5 +1,6 @@
 const carlo = require('carlo');
 const AWS = require('aws-sdk');
+const fs = require('fs');
 
 (async () => {
   const app = await carlo.launch();
@@ -7,6 +8,12 @@ const AWS = require('aws-sdk');
   app.on('exit', () => {
     closing = true
     process.exit()
+  });
+  app.serveHandler(request => {
+    if (request.url() === 'https://localhost/aws-step-functions.js')
+      request.fulfill({body: fs.readFileSync('./aws-step-functions.js')});
+    else
+      request.continue();
   });
   app.serveFolder(__dirname);
 
