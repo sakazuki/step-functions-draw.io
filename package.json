@@ -1,8 +1,8 @@
 {
-  "name": "step-functions-app",
-  "version": "1.0.0-beta.2",
+  "name": "step-functions",
+  "version": "0.5.0",
   "description": "You can make a AWS step functions workflow with GUI on the browser and export JSON.  You can import JSON of AWS step functions workflow and update it.",
-  "main": "carlo.js",
+  "main": "dist/aws-step-functions.js",
   "directories": {
     "example": "examples"
   },
@@ -11,9 +11,21 @@
     "carlo": "^0.9.46",
     "aws-sdk": "^2.511.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/mxgraph": "github:lgleim/mxgraph-typings",
+    "@typescript-eslint/eslint-plugin": "^2.3.0",
+    "@typescript-eslint/parser": "^2.3.0",
+    "eslint": "^6.4.0",
+    "eslint-plugin-html": "^6.0.0",
+    "ts-loader": "^6.1.1",
+    "typescript": "^3.6.3",
+    "webpack": "^4.40.2",
+    "webpack-cli": "^3.3.9"
+  },
   "scripts": {
-    "build": "pkg carlo.js --output step-functions-app --targets node12-win-x64,node12-macos-x64"
+    "dev": "npx webpack --mode development --watch",
+    "build": "npx webpack --mode production",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",

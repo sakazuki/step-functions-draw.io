@@ -1,0 +1,39 @@
+{
+    // Use IntelliSense to learn about possible Node.js debug attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // デバッグ設定の名称
+            "name": "Attach",
+            // デバッグ種別を指定（chrome/node/monoなど）
+            "type": "chrome",
+            // lanunchまたはattachを指定
+            "request": "attach",
+            // マッピングするローカルファイルが配置されているディレクトリを指定
+            "webRoot": "${workspaceRoot}/",
+            // リモートデバッギングポートのポート番号を指定（デフォルト値の9222を指定）
+            "port": 9222,
+            // ソースマップの有効・無効の指定（true/false）
+            "sourceMaps": true,
+            // コンソールにログを出力するかの指定（true/false）
+            "diagnosticLogging": true,
+            // デバッグに使用するブラウザ（異なるディレクトリに設置したChromeを使用したいときなどに指定）
+            "runtimeExecutable": null
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "プログラムの起動",
+            "program": "${file}",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "プロセスに添付",
+            "port": 5858
+        }
+    ]
+}

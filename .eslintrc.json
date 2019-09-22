@@ -1,11 +1,18 @@
 {
   "extends": ["eslint:recommended"],
-  "plugins": [],
-  "parserOptions": {},
+  "plugins": ["@typescript-eslint"],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "sourceType": "module",
+    "project": "./tsconfig.json",
+    "tsconfigRootDir": "."
+  },
   "env": {"browser": true, "es6": true},
   "globals": {
     "mxscript": false,
     "Draw": false,
+    "ui": false,
+    "graph": false,
     "Editor": false,
     "mxUtils": false,
     "mxEvent": false,
@@ -28,13 +35,30 @@
     "EditDataDialog": true,
     "mxCodec": false,
     "mxClient": false,
+    "mxCompactTreeLayout": false,
     "AWS": false,
     "__listStateMachines": false,
     "__describeStateMachine": false,
     "__updateAWSconfig": false,
     "__deployStateMachine": false,
     "jsyaml": false,
-    "jsep": false
+    "jsep": false,
+    "AWSconfig": "writable", 
+    "StartPoint": "writable", 
+    "EndPoint": "writable", 
+    "TaskState": "writable", 
+    "PassState": "writable", 
+    "ChoiceState": "writable", 
+    "WaitState": "writable", 
+    "SucceedState": "writable", 
+    "FailState": "writable", 
+    "ParallelState": "writable",
+    "StartAtEdge": "writable",
+    "NextEdge": "writable",
+    "RetryEdge": "writable",
+    "ChoiceEdge": "writable",
+    "CatchEdge": "writable",
+    "DefaultEdge": "writable"
   },
   "rules": {
     "indent": ["error", 2],
@@ -43,6 +67,8 @@
     "brace-style": ["error", "1tbs", { "allowSingleLine": true }],
     "space-before-blocks": ["error", "always"],
     "space-before-function-paren": ["error", "always"],
-    "camelcase": "error"
+    "camelcase": "warn",
+    "no-undef": "warn",
+    "no-unused-vars": "warn"
   }
 }
