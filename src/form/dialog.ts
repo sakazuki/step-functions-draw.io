@@ -1,13 +1,13 @@
 import * as awssfUtils from "../utils";
 
 export const awssfImportDialog = function (editorUi, title) {
-  var graph = editorUi.editor.graph;
+  const graph = editorUi.editor.graph;
 
   function recurseStates (states) {
-    var res = {hash: {}, list: []};
-    var cell;
-    for (var name in states) {
-      var body = states[name];
+    const res = {hash: {}, list: []};
+    let cell;
+    for (const name in states) {
+      const body = states[name];
       if (body.Type === "Pass") {
         cell = PassState.prototype.create(name, body);
       } else if (body.Type === "Task") {
@@ -23,10 +23,15 @@ export const awssfImportDialog = function (editorUi, title) {
       } else if (body.Type === "Parallel") {
         cell = ParallelState.prototype.create(name, body);
         for(const branch in body.Branches) {
-          var _sub = recurseStates(body.Branches[branch].States);
+          const _sub = recurseStates(body.Branches[branch].States);
           for(const _cell of _sub.list) cell.insert(_cell);
           Object.assign(res.hash, _sub.hash);
         }
+      } else if (body.Type === "Map") {
+        cell = MapState.prototype.create(name, body);
+        const _sub = recurseStates(body.Iterator.States);
+        for(const _cell of _sub.list) cell.insert(_cell);
+        Object.assign(res.hash, _sub.hash);
       }
       res.hash[name] = cell;
       res.list.push(cell);
@@ -79,10 +84,15 @@ export const awssfImportDialog = function (editorUi, title) {
       }
       if (body.Type === "Parallel") {
         for(const branch of body.Branches) {
-          var _sp = vertexes[name].getChildAt(0);
-          var tmp = recurseEdges(branch, vertexes, _sp);
+          const _sp = vertexes[name].getChildAt(0);
+          const tmp = recurseEdges(branch, vertexes, _sp);
           tmp.map(v => vertexes[name].insert(v));
         }
+      }
+      if (body.Type === "Map") {
+        const _sp = vertexes[name].getChildAt(0);
+        const tmp = recurseEdges(body.Iterator, vertexes, _sp);
+        tmp.map(v => vertexes[name].insert(v));
       }
     }
     return res;
@@ -122,7 +132,7 @@ export const awssfImportDialog = function (editorUi, title) {
     graph.setSelectionCells(cells);
     graph.getModel().beginUpdate();
     try {
-      var parallels = cells.filter(function (v) { return v.awssf.type === "Parallel"; });
+      var parallels = cells.filter(function (v) { return v.awssf.type.match(/Parallel|Map/); });
       var parallelLayout = new mxCompactTreeLayout(graph, false);
       parallelLayout.edgeRouting = false;
       parallelLayout.levelDistance = 30;

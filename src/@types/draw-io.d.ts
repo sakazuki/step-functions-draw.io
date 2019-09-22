@@ -6,6 +6,7 @@ declare module Editor {
   const helpImage: string
 }
 
+declare let Graph
 declare let EditDataDialog
 
 declare namespace ui {

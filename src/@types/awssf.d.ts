@@ -20,6 +20,7 @@ declare let WaitState
 declare let SucceedState
 declare let FailState
 declare let ParallelState
+declare let MapState
 
 declare let StartAtEdge
 declare let NextEdge

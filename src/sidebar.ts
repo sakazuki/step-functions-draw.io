@@ -1,7 +1,5 @@
 // Avoids having to bind all functions to "this"
 
-import { MapState } from "./states/map";
-
 export function setupSidebar (editorUi) {
   const sb = editorUi.sidebar;
   function addPalette (content) {

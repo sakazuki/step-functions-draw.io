@@ -21,8 +21,14 @@ export function isEnd (cell) {
 export function isParallelChild (cell) {
   return (cell && cell.parent && cell.parent.awssf && _is(cell.parent, "Parallel"));
 }
+export function isMapChild (cell) {
+  return (cell && cell.parent && cell.parent.awssf && _is(cell.parent, "Map"));
+}
 export function isParallel (cell) {
   return _is(cell, "Parralel");
+}
+export function isMap (cell) {
+  return _is(cell, "Map");
 }
 export function isTask (cell) {
   return _is(cell, "Task");
@@ -251,6 +257,7 @@ export function getStepFunctionDefinition () {
     if (!isAWSsf(cell)) continue;
     if (isAWSconfig(cell)) continue;
     if (isParallelChild(cell)) continue;
+    if (isMapChild(cell)) continue;
     if (isStartAt(cell)) {
       startat = model.cells[cell.target.id].getAttribute("label");
     }

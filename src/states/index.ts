@@ -1,4 +1,5 @@
 import * as helper from "./helper";
+import * as shapes from "../shapes/index";
 import { AWSconfig } from "./awsconfig";
 import { ChoiceState } from "./choice";
 import { StartAtEdge, NextEdge, RetryEdge, CatchEdge, ChoiceEdge, DefaultEdge } from "./edge";
@@ -13,6 +14,7 @@ import { MapState } from "./map";
 
 export function setupStates (editorUi) {
   helper.init(editorUi);
+  shapes.init();
   window['AWSconfig'] = AWSconfig;
   window['ChoiceState'] = ChoiceState;
   window['FailState'] = FailState;

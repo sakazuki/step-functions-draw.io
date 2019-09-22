@@ -6,10 +6,9 @@ ParallelState.prototype.type = 'Parallel';
 ParallelState.prototype.create = function (label, json) {
   if (!json) json = {};
   var style = 'swimlane;whiteSpace=wrap;html=1;dashed=1;gradientColor=none';
-  var cell = createState(this, label, style);
+  var cell = createState(this, label, style, json);
   var pt = cell.getGeometry();
   cell.setGeometry(new mxGeometry(pt.x, pt.y, 480, 200));
-  cell.setAttribute('result_path', json.ResultPath || '');
   cell.setAttribute('branches', '');
   var sp = StartPoint.prototype.create(new mxGeometry((cell.geometry.width - 30)/2, 40, 30, 30));
   cell.insert(sp);
@@ -37,15 +36,21 @@ ParallelState.prototype.createDefaultEdge = function (src) {
   return NextEdge.prototype.create();
 };
 ParallelState.prototype.validate = function (cell, res) {
+  if (!res) res = [];
+  if (awssfUtils.validateJson(cell.getAttribute("parameters")) == false) {
+    res.push("parameters MUST be valid JSON");
+  }
   return awssfUtils.validateCommonAttributes(cell, res, true);
 };
 ParallelState.prototype.expJSON = function (cell, cells) {
-  var data = {};
-  var label = cell.getAttribute("label");
+  const data = {};
+  const label = cell.getAttribute("label");
   data[label] = {
     Type: "Parallel",
     Branches: []
   };
+  if (cell.getAttribute("parameters"))
+    data[label].Parameters = JSON.parse(cell.getAttribute("parameters"));
   if (cell.getAttribute("comment"))
     data[label].Comment = cell.getAttribute("comment");
   if (cell.getAttribute("input_path"))
@@ -55,7 +60,7 @@ ParallelState.prototype.expJSON = function (cell, cells) {
   if (cell.getAttribute("result_path"))
     data[label].ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
 
-  var startat = [];
+  const startat = [];
   for(const child of cell.children) {
     if (!awssfUtils.isStart(child)) continue;
     for(const edge of child.edges) {
@@ -76,9 +81,9 @@ ParallelState.prototype.expJSON = function (cell, cells) {
     return res;
   }
   for(const start of startat) {
-    var branch = [];
+    const branch = [];
     traceAll(start, branch);
-    var states = {};
+    const states = {};
     for(const child of branch) {
       if (child.value == null || typeof(child.value) != "object") continue;
       if (!awssfUtils.isAWSsf(child)) continue;
@@ -95,9 +100,9 @@ ParallelState.prototype.expJSON = function (cell, cells) {
       States: states
     });
   }
-  var existNextEdge = false;
+  let existNextEdge = false;
   if (cell.edges) {
-    var sortedEdges = cell.edges.sort(function (a, b) {
+    const sortedEdges = cell.edges.sort(function (a, b) {
       if (Number(a.getAttribute("weight")) > Number(b.getAttribute("weight"))) return -1;
       if (Number(a.getAttribute("weight")) < Number(b.getAttribute("weight"))) return 1;
       return 0;

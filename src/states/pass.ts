@@ -7,6 +7,7 @@ PassState.prototype.create = function (label, json) {
   if (!json) json = {};
   var style = 'shape=mxgraph.flowchart.process;whiteSpace=wrap;gradientColor=none;html=1;';
   var cell = createState(this, label, style, json);
+  cell.setAttribute('parameters', JSON.stringify(json.Parameters) || '');
   cell.value.setAttribute('result', json.Result || '');
   cell.value.setAttribute('result_path', json.ResultPath || '');
   return cell;
@@ -20,6 +21,10 @@ PassState.prototype.createDefaultEdge = function (src) {
   return NextEdge.prototype.create();
 };
 PassState.prototype.validate = function (cell, res) {
+  if (!res) res = [];
+  if (awssfUtils.validateJson(cell.getAttribute("parameters")) == false) {
+    res.push("parameters MUST be valid JSON");
+  }
   return awssfUtils.validateCommonAttributes(cell, res, true);
 };
 PassState.prototype.expJSON = function (cell, cells) {
@@ -28,6 +33,8 @@ PassState.prototype.expJSON = function (cell, cells) {
   data[label] = {
     Type: "Pass"
   };
+  if (cell.getAttribute("parameters"))
+    data[label].Parameters = JSON.parse(cell.getAttribute("parameters"));
   if (cell.getAttribute("comment"))
     data[label].Comment = cell.getAttribute("comment");
   if (cell.getAttribute("input_path"))

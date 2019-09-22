@@ -17,8 +17,9 @@ declare namespace mxUtils {
   function findNode( node, attr, value)
   function getPrettyXml(node)
   function extend(ctor, superCtor)
-    
+  function getValue(array, key, defaultValue)
 }
+
 declare namespace mxEvent {
   function addGestureListeners( node, startListener, moveListener?, endListener? )
   function getClientX( e )
@@ -134,4 +135,11 @@ declare class mxMorphing extends mxAnimation{
 declare class mxAnimation {
   startAnimation()
   addListener(event, listener)
+}
+declare class mxSwimlane {
+  isHorizontal: boolean | Function
+  paintVertexShape: Function
+}
+declare module mxCellRenderer {
+  function registerShape(key, shape)
 }

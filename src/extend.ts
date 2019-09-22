@@ -30,7 +30,10 @@ mxConnectionHandler.prototype.insertEdge = function (parent, id, value, source, 
   if (awssfUtils.isParallelChild(source) || awssfUtils.isParallelChild(target)) {
     if (source.parent != target.parent) return null;
   }
-  if ((source == target) && (awssfUtils.isTask(source) || awssfUtils.isParallel(source))) {
+  if (awssfUtils.isMapChild(source) || awssfUtils.isMapChild(target)) {
+    if (source.parent != target.parent) return null;
+  }
+  if ((source == target) && (awssfUtils.isTask(source) || awssfUtils.isParallel(source) || awssfUtils.isMap(source))) {
     edge = RetryEdge.prototype.create();
   } else if (this.edgeState) {
     edge = this.edgeState.cell;

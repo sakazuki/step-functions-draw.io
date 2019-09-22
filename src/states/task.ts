@@ -8,10 +8,8 @@ TaskState.prototype.create = function (label, json) {
   var style = 'shape=stencil(rZVNb4MwDIZ/DdcqkI2P48S6Y1Wph51TMCMqTVDC2m2/fiEBdUCyAavExa+xH78BjIdTWZIavAAxcgYPP3tBsBeQQ0EZ5EreC56BlEpWQWluCJEJryZMYhMSWUPWGO1CBCXHCkxGNoKf4ErzputAWQmCNm0Wbz30pO5pL5xmnDHVhHImB5kfedWMUKZq0YdphjaPBvPZxSaqFeEMDYiBerO508LLaow/D3NYihl66aF/YV4XYvx1mO3iQ0PBiIT8mazdUk8WWBLPhB2Ww/r3foWz5cc4gc13ZoPhVCmujw2nR5Kd3gR/Z7l1RJ0R7cfuem2tC2K0PojIJP3qpgw3kR+FcYSihzhIEuy7hnaMhtOCC/hl5oJWldlDroOvSbueJok+feYXuPmNLH5tbfvqSu1TV3XoLteWHYOp3X0/P4n/L0Oj8js70jWT56tV8/vSwjc=);whiteSpace=wrap;gradientColor=none;html=1;';
   var cell = createState(this, label, style, json);
   cell.setAttribute('resource', json.Resource || '');
-  cell.setAttribute('parameters', JSON.stringify(json.Parameters) || '');
   cell.setAttribute('timeout_seconds', json.TimeoutSeconds || 60);
   cell.setAttribute('heartbeat_seconds', json.HeartbeatSeconds || '');
-  cell.setAttribute('result_path', json.ResultPath || '');
   return cell;
 };
 TaskState.prototype.createDefaultEdge = function (src) {

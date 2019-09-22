@@ -96,8 +96,14 @@ export function setupEditData () {
         const datalist = document.createElement('datalist');
         datalist.id = "errors";
         var errors = [
-          "States.ALL", "States.Timeout", "States.TaskFailed", "States.Permissions",
-          "States.ResultPathMatchFailure", "States.BranchFailed", "States.NoChoiceMatched"
+          "States.ALL",
+          "States.Timeout",
+          "States.TaskFailed",
+          "States.Permissions",
+          "States.ResultPathMatchFailure",
+          "States.ParameterPathFailure",
+          "States.BranchFailed",
+          "States.NoChoiceMatched"
         ];
         for (const error of errors) {
           const opt = document.createElement('option');

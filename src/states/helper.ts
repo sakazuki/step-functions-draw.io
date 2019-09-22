@@ -133,8 +133,14 @@ export function createState (awssf, name, style, json?) {
   cell.setAttribute('label', label);
   cell.setAttribute('type', 'awssf' + awssf.type);
   cell.setAttribute('comment', json.Comment || '');
-  cell.setAttribute('input_path', json.InputPath || '');
-  cell.setAttribute('output_path', json.OutputPath || '');
+  if (!awssf.type.match(/Fail/)) {
+    cell.setAttribute('input_path', json.InputPath || '');
+    cell.setAttribute('output_path', json.OutputPath || '');
+  }
+  if (awssf.type.match(/Pass|Task|Parallel|Map/)) {
+    cell.setAttribute('parameters', JSON.stringify(json.Parameters) || '');
+    cell.setAttribute('result_path', json.ResultPath || '');
+  }
   cell.awssf = awssf;
   return cell;
 }
