@@ -136,6 +136,7 @@ export const awssfImportDialog = function (editorUi, title) {
       var parallelLayout = new mxCompactTreeLayout(graph, false);
       parallelLayout.edgeRouting = false;
       parallelLayout.levelDistance = 30;
+      parallelLayout.groupPadding = 30;
       for (var p in parallels) {
         parallelLayout.execute(parallels[p], parallels[p].getChildAt(0));
       }
