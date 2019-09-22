@@ -126,6 +126,9 @@ declare class mxCompactTreeLayout {
   constructor(graph, horizontal, invert?)
   edgeRouting: boolean
   levelDistance: number
+  groupPadding: number
+  groupPaddingTop: number
+  groupPaddingBottom: number
   execute(parent, root?)
     
 }
