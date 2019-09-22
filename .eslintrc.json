@@ -53,6 +53,7 @@
     "SucceedState": "writable", 
     "FailState": "writable", 
     "ParallelState": "writable",
+    "MapState": "writable",
     "StartAtEdge": "writable",
     "NextEdge": "writable",
     "RetryEdge": "writable",

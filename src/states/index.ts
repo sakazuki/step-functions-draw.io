@@ -9,6 +9,7 @@ import { StartPoint, EndPoint } from "./point";
 import { SucceedState } from "./succeed";
 import { TaskState } from "./task";
 import { WaitState} from "./wait";
+import { MapState } from "./map";
 
 export function setupStates (editorUi) {
   helper.init(editorUi);
@@ -16,6 +17,7 @@ export function setupStates (editorUi) {
   window['ChoiceState'] = ChoiceState;
   window['FailState'] = FailState;
   window['ParallelState'] = ParallelState;
+  window['MapState'] = MapState;
   window['PassState'] = PassState;
   window['StartPoint'] = StartPoint;
   window['EndPoint'] = EndPoint;

@@ -1,5 +1,7 @@
 // Avoids having to bind all functions to "this"
 
+import { MapState } from "./states/map";
+
 export function setupSidebar (editorUi) {
   const sb = editorUi.sidebar;
   function addPalette (content) {
@@ -13,7 +15,8 @@ export function setupSidebar (editorUi) {
       WaitState,
       SucceedState,
       FailState,
-      ParallelState
+      ParallelState,
+      MapState
     ];
     for (const vertex of vertexes) {
       const cell = vertex.prototype.create();
