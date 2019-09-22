@@ -234,3 +234,63 @@ export function setupEditData () {
     this.container = div;
   };
 }
+
+function jsonEditorDialog (editorUi, title, json) {
+  var div = document.createElement('div');
+
+  var h3 = document.createElement('h2');
+  mxUtils.write(h3, title);
+  h3.style.marginTop = '0px';
+  h3.style.marginBottom = '24px';
+  div.appendChild(h3);
+  var form = new mxForm('properties');
+  form.table.style.width = '100%';
+  form.table.style.paddingRight = '20px';
+
+  const jsonEditor = document.createElement('div');
+  jsonEditor.id = "jsoneditor";
+  const options = {
+    mode: 'text',
+    modes: ['code', 'form', 'text', 'tree', 'view'],
+    onError: function (err) {
+      alert(err.toString());
+    }
+  };
+  const ed = new JSONEditor(jsonEditor, options);
+  ed.set(JSON.parse(json));
+  ed.compact();
+
+  form.addField('', jsonEditor);
+  
+  div.appendChild(form.table);
+  var buttons = document.createElement('div');
+  buttons.style.marginTop = '18px';
+  buttons.style.textAlign = 'right';
+  this.init = function () {
+    //@ts-ignore
+    ed.focus();
+  };
+  var cancelBtn = mxUtils.button(mxResources.get('close'), function () {
+    editorUi.hideDialog();
+  });
+  cancelBtn.className = 'geBtn';
+  buttons.appendChild(cancelBtn);
+  var okBtn = mxUtils.button(mxResources.get('apply'), function () {
+
+  });
+  buttons.appendChild(okBtn);
+
+  okBtn.className = 'geBtn gePrimaryBtn';
+
+
+  div.appendChild(buttons);
+  this.container = div;
+
+}
+
+function editJson (ui, json) {
+  var dlg = new jsonEditorDialog(ui, 'JSON Editor', json);
+  ui.showDialog(dlg.container, 800, 600, true, false);
+  dlg.container.parentNode.style.resize = 'both';
+  dlg.init();
+}

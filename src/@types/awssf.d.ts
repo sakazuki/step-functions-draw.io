@@ -9,6 +9,13 @@ declare module jsyaml {
   function dump(obj)
 }
 declare function jsep(condition)
+declare class JSONEditor {
+  constructor(node, options)
+  set(json)
+  get()
+  format()
+  compact()
+}
 
 declare let AWSconfig
 declare let StartPoint
