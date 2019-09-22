@@ -3,6 +3,13 @@ let ui;
 export function init (editorUi) {
   ui = editorUi;
 }
+export function linkStyle (url) {
+  var linkElement = document.createElement('link');
+  linkElement.setAttribute('rel', 'stylesheet');
+  linkElement.setAttribute('href', url);
+  document.getElementsByTagName('head')[0].appendChild(linkElement);
+}
+
 export function _is (cell, name) {
   return (cell && cell.value && (cell.value.getAttribute("type") == `awssf${name}`));
 }
