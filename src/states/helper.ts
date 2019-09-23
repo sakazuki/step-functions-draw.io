@@ -125,8 +125,7 @@ export function createState (awssf, name, style, json?) {
   var label = name || awssf.type;
   if (!style) style = 'rounded=1;whiteSpace=wrap;html=1;gradientColor=none;dashed=1';
   if (!json) json = {};
-  var pt = (graph.isMouseInsertPoint()) ? graph.getInsertPoint() : graph.getFreeInsertPoint();
-  var geometry = new mxGeometry(pt.x, pt.y, 80, 40);
+  var geometry = new mxGeometry(0, 0, 80, 40);
   var cell = new mxCell(label, geometry, style);
   cell.vertex = true;
   cell.value = mxUtils.createXmlDocument().createElement('object');
@@ -148,8 +147,7 @@ export function createState (awssf, name, style, json?) {
 export function createPoint (awssf, geometry?) {
   var label = awssf.type;
   if (geometry == null) {
-    var pt = (graph.isMouseInsertPoint()) ? graph.getInsertPoint() : graph.getFreeInsertPoint();
-    geometry = new mxGeometry(pt.x, pt.y, 40, 40);
+    geometry = new mxGeometry(0, 0, 40, 40);
   }
   var cell = new mxCell(label, geometry,'ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;');
   cell.vertex = true;
