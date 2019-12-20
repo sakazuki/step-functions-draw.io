@@ -5,6 +5,7 @@ import { setupSidebar } from "./sidebar";
 import { refreshScratchpadData } from "./patch";
 import { setupMisc } from "./extend";
 import { setupStates } from "./states/index";
+import "./style.css";
 
 export default function main (ui) {
   utils.init(ui);

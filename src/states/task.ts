@@ -47,8 +47,17 @@ TaskState.prototype.expJSON = function (cell, cells) {
     Type: "Task",
     Resource: cell.getAttribute("resource")
   };
-  if (cell.getAttribute("parameters"))
-    data[label].Parameters = JSON.parse(cell.getAttribute("parameters"));
+  if (cell.getAttribute("parameters")) {
+    var value = cell.getAttribute("parameters");
+    if (value) {
+      if (value[0] === "{") {
+        if (value !== "{}")
+          data[label].Parameters = JSON.parse(value);
+      } else {
+        data[label].Parameters = value;
+      }
+    }
+  }
   if (cell.getAttribute("comment"))
     data[label].Comment = cell.getAttribute("comment");
   if (cell.getAttribute("input_path"))

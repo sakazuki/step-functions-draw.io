@@ -1,0 +1,23 @@
+/* dark styling of the editor */
+div.jsoneditor,
+div.jsoneditor-menu {
+  border-color: #9c9c9c;
+}
+div.jsoneditor-menu {
+  background-color: #9c9c9c;
+}
+
+/* coloring of modal */
+div.jsoneditor-modal .pico-modal-header {
+  background-color: #9c9c9c;
+}
+div.jsoneditor-modal .jsoneditor-jmespath-label {
+  color: black;
+}
+div.jsoneditor-modal .jsoneditor-button-group.jsoneditor-button-group-value-asc input.jsoneditor-button-asc,
+div.jsoneditor-modal .jsoneditor-button-group.jsoneditor-button-group-value-desc input.jsoneditor-button-desc{
+  background-color: #357ae8;
+  background-image: linear-gradient(#4d90fe 0px,#357ae8 100%);
+  border: 1px solid #2f5bb7;
+  color: #fff;
+}
