@@ -8,21 +8,21 @@
   },
   "pkg": {},
   "dependencies": {
-    "carlo": "^0.9.46",
-    "aws-sdk": "^2.511.0"
+    "aws-sdk": "^2.594.0",
+    "carlo": "^0.9.46"
   },
   "devDependencies": {
     "@types/mxgraph": "github:lgleim/mxgraph-typings",
-    "@typescript-eslint/eslint-plugin": "^2.3.0",
-    "@typescript-eslint/parser": "^2.3.0",
+    "@typescript-eslint/eslint-plugin": "^2.12.0",
+    "@typescript-eslint/parser": "^2.12.0",
     "css-loader": "^3.4.0",
-    "eslint": "^6.4.0",
+    "eslint": "^6.7.2",
     "eslint-plugin-html": "^6.0.0",
-    "style-loader": "^1.0.2",
-    "ts-loader": "^6.1.1",
-    "typescript": "^3.6.3",
-    "webpack": "^4.40.2",
-    "webpack-cli": "^3.3.9"
+    "style-loader": "^1.1.1",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.3",
+    "webpack": "^4.41.4",
+    "webpack-cli": "^3.3.10"
   },
   "scripts": {
     "dev": "npx webpack --mode development --watch",
