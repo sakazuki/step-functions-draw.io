@@ -14,7 +14,7 @@
 1. Select Save Option (ex. Decide Later...)
 1. Select Menu [Extras]-[Plugins]
 1. Click [Add]
-1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.5.1/dist/aws-step-functions.js
+1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.0/dist/aws-step-functions.js
 1. [Apply]
 1. Reload the page
 
@@ -69,7 +69,23 @@
 1. [Apply]
 1. Reload the page (Right click on a header part, and select reload menu.)
 
+## Advanced usage
+
+```
+git clone https://github.com/sakazuki/step-functions-draw.io.git
+cd step-functions-draw.io
+npm install
+node carlo.js
+
+# Select Menu [Extras]-[Plugins]
+# Click [Add]
+# Input https://localhost/aws-step-functions.js
+# [Apply]
+# Reload the page (Right click on a header part, and select reload menu.)
+```
+
 ## Version history
+- https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.0/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.5.1/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.5.0/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.4.3/aws-step-functions.js
