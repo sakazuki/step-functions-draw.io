@@ -314,9 +314,168 @@ export function getCallerIdentity (callback) {
   });
 }
 
+export const awsServiceParameters = {
+  "arn:aws:states:::lambda:invoke" : [
+    "ClientContext",
+    "FunctionName",
+    "InvocationType",
+    "Qualifier",
+    "Payload",
+  ],
+  "arn:aws:states:::batch:submitJob": [
+    "ArrayProperties",
+    "ContainerOverrides",
+    "DependsOn",
+    "JobDefinition",
+    "JobName",
+    "JobQueue",
+    "Parameters",
+    "RetryStrategy",
+    "Timeout"
+  ],
+  "arn:aws:states:::dynamodb:getItem": [
+    "Key",
+    "TableName",
+    "AttributesToGet",
+    "ConsistentRead",
+    "ExpressionAttributeNames",
+    "ProjectionExpression",
+    "ReturnConsumedCapacity",
+  ],
+  "arn:aws:states:::dynamodb:putItem": [
+    "Item",
+    "TableName",
+    "ConditionalOperator",
+    "ConditionExpression",
+    "Expected",
+    "ExpressionAttributeNames",
+    "ExpressionAttributeValues",
+    "ReturnConsumedCapacity",
+    "ReturnItemCollectionMetrics",
+    "ReturnValues"
+  ],
+  "arn:aws:states:::dynamodb:deleteItem": [
+    "Key",
+    "TableName",
+    "ConditionalOperator",
+    "ConditionExpression",
+    "Expected",
+    "ExpressionAttributeNames",
+    "ExpressionAttributeValues",
+    "ReturnConsumedCapacity",
+    "ReturnItemCollectionMetrics",
+    "ReturnValues",
+  ],
+  "arn:aws:states:::dynamodb:updateItem": [
+    "Key",
+    "TableName",
+    "AttributeUpdates",
+    "ConditionalOperator",
+    "ConditionExpression",
+    "Expected",
+    "ExpressionAttributeNames",
+    "ExpressionAttributeValues",
+    "ReturnConsumedCapacity",
+    "ReturnItemCollectionMetrics",
+    "ReturnValues",
+    "UpdateExpression"
+  ],
+  "arn:aws:states:::ecs:runTask": [
+    "Cluster",
+    "Group",
+    "LaunchType",
+    "NetworkConfiguration",
+    "Overrides",
+    "PlacementConstraints",
+    "PlacementStrategy",
+    "PlatformVersion",
+    "TaskDefinition"
+  ],
+  "arn:aws:states:::sns:publish": [
+    "Message",
+    "MessageAttributes",
+    "MessageStructure",
+    "PhoneNumber",
+    "Subject",
+    "TargetArn",
+    "TopicArn",
+  ],
+  "arn:aws:states:::sqs:sendMessage": [
+    "DelaySeconds",
+    "MessageAttribute",
+    "MessageBody",
+    "MessageDeduplicationId",
+    "MessageGroupId",
+    "QueueUrl"
+  ],
+  "arn:aws:states:::glue:startJobRun": [
+    "JobName",
+    "JobRunId",
+    "Arguments",
+    "AllocatedCapacity",
+    "Timeout",
+    "SecurityConfiguration",
+    "NotificationProperty"
+  ],
+  "arn:aws:states:::states:startExecution": [
+    "input",
+    "name",
+    "stateMachineArn"
+  ]
+};
+
 export function getResourceList (callback) {
-  if (!setupAWSconfig()) return;
-  var funclist = [];
+  // https://docs.aws.amazon.com/step-functions/latest/dg/connect-supported-services.html
+  var funclist = [
+    "arn:aws:states:::lambda:invoke",
+    "arn:aws:states:::lambda:invoke.waitForTaskToken",
+    "arn:aws:states:::batch:submitJob",
+    "arn:aws:states:::batch:submitJob.sync",
+    "arn:aws:states:::dynamodb:updateItem",
+    "arn:aws:states:::dynamodb:putItem",
+    "arn:aws:states:::dynamodb:getItem",
+    "arn:aws:states:::dynamodb:deleteItem",
+    "arn:aws:states:::ecs:runTask",
+    "arn:aws:states:::ecs:runTask.sync",
+    "arn:aws:states:::ecs:runTask.waitForTaskToken",
+    "arn:aws:states:::sns:publish",
+    "arn:aws:states:::sns:publish.waitForTaskToken",
+    "arn:aws:states:::sqs:sendMessage",
+    "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+    "arn:aws:states:::glue:startJobRun",
+    "arn:aws:states:::glue:startJobRun.sync",
+    // https://docs.aws.amazon.com/step-functions/latest/dg/connect-sagemaker.html
+    "arn:aws:states:::sagemaker:createEndpoint",
+    "arn:aws:states:::sagemaker:createEndpoint.sync",
+    "arn:aws:states:::sagemaker:createEndpointConfig",
+    "arn:aws:states:::sagemaker:createEndpointConfig.sync",
+    "arn:aws:states:::sagemaker:createHyperParameterTuningJob",
+    "arn:aws:states:::sagemaker:createHyperParameterTuningJob.sync",
+    "arn:aws:states:::sagemaker:createLabelingJob",
+    "arn:aws:states:::sagemaker:createLabelingJob.sync",
+    "arn:aws:states:::sagemaker:createModel",
+    "arn:aws:states:::sagemaker:createModel.sync",
+    "arn:aws:states:::sagemaker:createTrainingJob",
+    "arn:aws:states:::sagemaker:createTrainingJob.sync",
+    "arn:aws:states:::sagemaker:createTransformJob",
+    "arn:aws:states:::sagemaker:createTransformJob.sync",
+    "arn:aws:states:::sagemaker:updateEndpoint",
+    "arn:aws:states:::sagemaker:updateEndpoint.sync",
+    // https://docs.aws.amazon.com/step-functions/latest/dg/connect-emr.html
+    "arn:aws:states:::elasticmapreduce:createCluster",
+    "arn:aws:states:::elasticmapreduce:createCluster.sync",
+    "arn:aws:states:::elasticmapreduce:setClusterTerminationProtection",
+    "arn:aws:states:::elasticmapreduce:terminateCluster",
+    "arn:aws:states:::elasticmapreduce:terminateCluster.sync",
+    "arn:aws:states:::elasticmapreduce:addStep.sync",
+    "arn:aws:states:::elasticmapreduce:cancelStep",
+    "arn:aws:states:::elasticmapreduce:modifyInstanceFleetByName",
+    "arn:aws:states:::elasticmapreduce:modifyInstanceGroupByName",
+    "arn:aws:states:::states:startExecution",
+    "arn:aws:states:::states:startExecution.sync",
+    "arn:aws:states:::states:startExecution.waitForTaskToken",
+  ];
+  if (!setupAWSconfig()) return callback(funclist);
   // var stepfunctions = new AWS.StepFunctions({apiVersion: '2016-11-23'});
   // stepfunctions.listActivities({}, function(err, data){
   //   if (err) console.log(err, err.stack); // an error occurred

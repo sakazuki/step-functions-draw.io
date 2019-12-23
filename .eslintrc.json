@@ -61,7 +61,8 @@
     "RetryEdge": "writable",
     "ChoiceEdge": "writable",
     "CatchEdge": "writable",
-    "DefaultEdge": "writable"
+    "DefaultEdge": "writable",
+    "$": false
   },
   "rules": {
     "indent": ["error", 2],

@@ -33,7 +33,19 @@ export function setupEditData () {
     var colgroupValue = document.createElement('colgroup');
     form.table.insertBefore(colgroupValue, form.body);
   
-    var attrs = value.attributes;
+    var attrs = [];
+    if (cell.awssf.orderedAttributes) {
+      cell.awssf.orderedAttributes.forEach(v => {
+        attrs.push(value.attributes.getNamedItem(v));
+      });
+      for (const attr of value.attributes) {
+        if (cell.awssf.orderedAttributes.indexOf(attr.nodeName) === -1) {
+          attrs.push(attr);
+        }
+      }
+    } else {
+      attrs.push(...value.attributes);
+    }
     var names = [];
     var texts = [];
     var count = 0;
@@ -52,10 +64,11 @@ export function setupEditData () {
       return texts[index];
     };
 
-    var addJsonEdit = function (index, name, value) {
+    var addJsonEdit = function (index, name, value, autocomplete) {
       names[index] = name;
       const div = document.createElement('div');
       div.id = "jsoneditor";
+      div.className = name;
       const options = {
         mode: 'code',
         modes: ['code', 'tree'],
@@ -65,8 +78,21 @@ export function setupEditData () {
         modalAnchor: div,
         popupAnchor: div
       };
+      // @ts-ignore
+      if (autocomplete) options.autocomplete = autocomplete;
       const jsonEditor = {
-        ed: new JSONEditor(div, options, value),
+        ed: new JSONEditor(div, options),
+        set value (data) {
+          try {
+            if (data[0] === '{') {
+              this.ed.set(JSON.parse(data));
+            } else if (data.length > 0) {
+              this.ed.set(data);
+            }
+          } catch (err) {
+            this.ed.set(data);
+          }
+        },
         get value () {
           var data = this.ed.get();
           if (typeof data === 'object') {
@@ -76,6 +102,7 @@ export function setupEditData () {
           }
         }
       };
+      jsonEditor.value = value;
       texts[index] = jsonEditor;
       return form.addField(names[count] + ':', div);
     };
@@ -147,7 +174,24 @@ export function setupEditData () {
           count++;
         }
       } else if (nodeName == 'parameters') {
-        addJsonEdit(count, nodeName, nodeValue);
+        const autocomplete = {
+          applyTo:['value'],
+          filter: 'start',
+          trigger: 'focus',
+          getOptions: function (text, path, input, editor) {
+            return new Promise(function (resolve, reject) {
+              if (path[0] !== "") return reject();
+              if (input !== 'field') return reject();
+              // @ts-ignore
+              const resource = $("input[list='resources']")[0].value;
+              if (!resource) return reject();
+              const options = awssfUtils.awsServiceParameters[resource.replace(/\.[^.]+$/, '')];
+              if (options.length === 0) return reject();
+              return resolve(options);
+            });
+          }
+        };
+        addJsonEdit(count, nodeName, nodeValue, autocomplete);
         count++;
       } else if (/*nodeName != 'label' && */nodeName != 'placeholders') {
         addTextArea(count, nodeName, nodeValue);

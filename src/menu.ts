@@ -7,7 +7,7 @@ function editData () {
   var cell = ui.editor.graph.getSelectionCell() || ui.editor.graph.getModel().getRoot();
   if (cell != null) {
     var dlg = new EditDataDialog(ui, cell);
-    ui.showDialog(dlg.container, 600, 320, true, false);
+    ui.showDialog(dlg.container, 600, 500, true, false);
     dlg.container.parentNode.style.resize = 'both';
     dlg.init();
   }

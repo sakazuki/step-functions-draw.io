@@ -40,6 +40,12 @@ TaskState.prototype.validate = function (cell, res) {
   }
   return awssfUtils.validateCommonAttributes(cell, res, true);
 };
+TaskState.prototype.orderedAttributes = [
+  "label", "type",
+  "resource", "parameters",
+  "input_path", "output_path", "result_path",
+  "timeout_seconds", "heartbeat_seconds", "comment"
+];
 TaskState.prototype.expJSON = function (cell, cells) {
   var data = {};
   var label = cell.getAttribute("label");

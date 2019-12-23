@@ -12,6 +12,7 @@
     "carlo": "^0.9.46"
   },
   "devDependencies": {
+    "@types/jquery": "^3.3.31",
     "@types/mxgraph": "github:lgleim/mxgraph-typings",
     "@typescript-eslint/eslint-plugin": "^2.12.0",
     "@typescript-eslint/parser": "^2.12.0",
