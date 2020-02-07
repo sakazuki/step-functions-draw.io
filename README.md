@@ -14,11 +14,9 @@
 1. Select Save Option (ex. Decide Later...)
 1. Select Menu [Extras]-[Plugins]
 1. Click [Add]
-1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.0/dist/aws-step-functions.js
+1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.1/dist/aws-step-functions.js
 1. [Apply]
 1. Reload the page
-
-- You can run locally draw.io in the browser too. See details [draw.io Wiki page](https://github.com/jgraph/draw.io/wiki/Building)
 
 ## Example
 1. Drag and drop a **Start** on a diagram
@@ -52,6 +50,7 @@
 ## Feature
 - You can put states that are not connected.
 - You can use states that is normal shapes that draw.io provides.
+- You can run locally draw.io in the browser too. See details [draw.io Wiki page](https://github.com/jgraph/draw.io/wiki/Building)
 
 ## Useful TIPS
 - Put a inputed AWSconfig into [Scratchpad].
@@ -85,6 +84,7 @@ node carlo.js
 ```
 
 ## Version history
+- https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.1/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.0/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.5.1/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.5.0/dist/aws-step-functions.js
