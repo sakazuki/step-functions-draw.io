@@ -107,7 +107,7 @@ TaskState.prototype.expJSON = function (cell, cells) {
   }
   return data;
 };
-registCodec(TaskState);
+registCodec('TaskState', TaskState);
 var TaskStateHandler = function (state) {
   this.custom = function () {
     this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));

@@ -126,7 +126,7 @@ MapState.prototype.expJSON = function (cell, cells) {
 
 };
 
-registCodec(MapState);
+registCodec('MapState', MapState);
 
 var MapStateHandler = function (state) {
   this.custom = function () {

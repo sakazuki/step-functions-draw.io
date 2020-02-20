@@ -130,7 +130,7 @@ ParallelState.prototype.expJSON = function (cell, cells) {
   return data;
 
 };
-registCodec(ParallelState);
+registCodec('ParallelState', ParallelState);
 var ParallelStateHandler = function (state) {
   this.custom = function () {
     this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));

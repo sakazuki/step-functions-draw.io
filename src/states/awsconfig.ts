@@ -18,4 +18,4 @@ AWSconfig.prototype.create = function () {
   return createAWSconfig(this);
 };
 AWSconfig.prototype.handler = awssfStateHandler;
-registCodec(AWSconfig);
+registCodec('AWSconfig', AWSconfig);

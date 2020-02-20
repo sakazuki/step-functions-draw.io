@@ -6,11 +6,11 @@ export function init (editorUi) {
   graph = editorUi.editor ? editorUi.editor.graph : editorUi.graph;
 }
 
-export function registCodec (func) {
+export function registCodec (name, func) {
   var codec = new mxObjectCodec(new func());
   codec.encode = function (enc, obj) {
     try{
-      var data = enc.document.createElement(func.name);
+      var data = enc.document.createElement(name);
     }catch(e) {
       console.log("encode error", e);
     }

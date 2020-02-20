@@ -54,7 +54,7 @@ ChoiceState.prototype.expJSON = function (cell, cells) {
   }
   return data;
 };
-registCodec(ChoiceState);
+registCodec('ChoiceState', ChoiceState);
 var ChoiceStateHandler = function (state) {
   this.custom = function () {
     this.domNode.appendChild(ChoiceEdge.prototype.createHandlerImage.apply(this, arguments));

@@ -60,7 +60,7 @@ PassState.prototype.expJSON = function (cell, cells) {
   }
   return data;
 };
-registCodec(PassState);
+registCodec('PassState', PassState);
 var PassStateHandler = function (state) {
   this.custom = function () {
     this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));

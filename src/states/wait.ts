@@ -147,7 +147,7 @@ WaitState.prototype.applyForm = function (value, name, text) {
   }
   return removeLabel;
 };
-registCodec(WaitState);
+registCodec('WaitState', WaitState);
 var WaitStateHandler = function (state) {
   this.custom = function () {
     this.domNode.appendChild(NextEdge.prototype.createHandlerImage.apply(this, arguments));
