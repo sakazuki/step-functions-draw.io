@@ -18,8 +18,6 @@
 1. [Apply]
 1. Reload the page
 
-- You can run locally draw.io in the browser too. See details [draw.io Wiki page](https://github.com/jgraph/draw.io/wiki/Building)
-
 ## Example
 1. Drag and drop a **Start** on a diagram
 1. Drag and drop a **Task** on a diagram
@@ -52,6 +50,7 @@
 ## Feature
 - You can put states that are not connected.
 - You can use states that is normal shapes that draw.io provides.
+- You can run locally draw.io in the browser too. See details [draw.io Wiki page](https://github.com/jgraph/draw.io/wiki/Building)
 
 ## Useful TIPS
 - Put a inputed AWSconfig into [Scratchpad].

@@ -150,6 +150,9 @@ CatchEdge.prototype.expJSON = function (cell, cells) {
       ErrorEquals: errors,
       Next: cells[cell.target.id].getAttribute("label")
     };
+    if (cell.getAttribute("result_path"))
+      //@ts-ignore
+      data.ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
     return data;
   }else{
     return {};
