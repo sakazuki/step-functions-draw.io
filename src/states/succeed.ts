@@ -31,5 +31,5 @@ SucceedState.prototype.expJSON = function (cell, cells) {
     data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
   return data;
 };
-registCodec(SucceedState);
+registCodec('SucceedState', SucceedState);
 SucceedState.prototype.handler = awssfStateHandler;

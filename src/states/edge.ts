@@ -26,7 +26,7 @@ StartAtEdge.prototype.expJSON = function (cell, cells) {
   }
 };
 StartAtEdge.prototype.handler = awssfEdgeHandler;
-registCodec(StartAtEdge);
+registCodec('StartAtEdge', StartAtEdge);
 
 
 const NextEdge = function () {};
@@ -58,7 +58,7 @@ NextEdge.prototype.createHandlerImage = function () {
   return img;
 };
 NextEdge.prototype.handler = awssfEdgeHandler;
-registCodec(NextEdge);
+registCodec('NextEdge', NextEdge);
 
 
 const RetryEdge = function () {};
@@ -117,7 +117,7 @@ RetryEdge.prototype.createHandlerImage = function () {
   return img;
 };
 RetryEdge.prototype.handler = awssfEdgeHandler;
-registCodec(RetryEdge);
+registCodec('RetryEdge', RetryEdge);
 
 const CatchEdge = function () {};
 CatchEdge.prototype.type = 'Catch';
@@ -160,7 +160,7 @@ CatchEdge.prototype.createHandlerImage = function () {
   return img;
 };
 CatchEdge.prototype.handler = awssfEdgeHandler;
-registCodec(CatchEdge);
+registCodec('CatchEdge', CatchEdge);
 
 const ChoiceEdge = function () {};
 ChoiceEdge.prototype.type = 'Choice';
@@ -210,7 +210,7 @@ ChoiceEdge.prototype.createHandlerImage = function () {
   return img;
 };
 ChoiceEdge.prototype.handler = awssfEdgeHandler;
-registCodec(ChoiceEdge);
+registCodec('ChoiceEdge', ChoiceEdge);
 
 const DefaultEdge = function DefaultEdge () {};
 DefaultEdge.prototype.type = 'Default';
@@ -241,6 +241,6 @@ DefaultEdge.prototype.createHandlerImage = function () {
   return img;
 };
 DefaultEdge.prototype.handler = awssfEdgeHandler;
-registCodec(DefaultEdge);
+registCodec('DefaultEdge', DefaultEdge);
 
 export { StartAtEdge, NextEdge, RetryEdge, CatchEdge, ChoiceEdge, DefaultEdge };

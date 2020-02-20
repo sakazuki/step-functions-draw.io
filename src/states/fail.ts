@@ -39,5 +39,5 @@ FailState.prototype.expJSON = function (cell, cells) {
     data[label].Comment = cell.getAttribute("comment");
   return data;
 };
-registCodec(FailState);
+registCodec('FailState', FailState);
 FailState.prototype.handler = awssfStateHandler;
