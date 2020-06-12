@@ -298,7 +298,7 @@ export function setupAWSconfig () {
     return false;
   }
   var awsconfig = codec.decode(found);
-  var params = {accessKeyId: awsconfig.getAttribute('accessKeyId'), secretAccessKey: awsconfig.getAttribute('secretAccessKey'), region: awsconfig.getAttribute('region')};
+  var params = {accessKeyId: awsconfig.getAttribute('accessKeyId'), secretAccessKey: awsconfig.getAttribute('secretAccessKey'), sessionToken: awsconfig.getAttribute('sessionToken'), region: awsconfig.getAttribute('region')};
   AWS.config.update(params);
   if (typeof __updateAWSconfig !== "undefined") {
     __updateAWSconfig(params);

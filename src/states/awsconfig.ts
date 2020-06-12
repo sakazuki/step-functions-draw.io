@@ -9,6 +9,7 @@ function createAWSconfig (awsf) {
   cell.setAttribute('accessKeyId', '');
   cell.setAttribute('secretAccessKey', '');
   cell.setAttribute('region', '');
+  cell.setAttribute('sessionToken', '')
   cell.awssf = awsf;
   return cell;
 }
