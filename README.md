@@ -18,6 +18,9 @@
 1. [Apply]
 1. Reload the page
 
+- Caution: This plugin does not work on https://app.diagrams.net/. so use this on https://www.draw.io.  
+  This seems to be due to the difference in security policy. See [this comment](https://github.com/jgraph/drawio/issues/958#issuecomment-644206032) for detail.
+
 ## Example
 1. Drag and drop a **Start** on a diagram
 1. Drag and drop a **Task** on a diagram
