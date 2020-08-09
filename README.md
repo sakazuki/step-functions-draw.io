@@ -13,8 +13,8 @@
 1. Access to https://www.draw.io/.
 1. Select Save Option (ex. Decide Later...)
 1. Select Menu [Extras]-[Plugins]
-1. Click [Add]
-1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.2/dist/aws-step-functions.js
+1. Click [Add] and Click [Custom...]
+1. Input https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.3/dist/aws-step-functions.js
 1. [Apply]
 1. Reload the page
 
@@ -87,6 +87,7 @@ node carlo.js
 ```
 
 ## Version history
+- https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.3/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.2/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.1/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.0/dist/aws-step-functions.js

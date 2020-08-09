@@ -11,10 +11,10 @@ export function linkStyle (url) {
 }
 
 export function _is (cell, name) {
-  return (cell && cell.value && (cell.value.getAttribute("type") == `awssf${name}`));
+  return (cell && cell.value && cell.value.getAttribute && (cell.value.getAttribute("type") == `awssf${name}`));
 }
 export function isAWSsf (cell) {
-  return (cell && (cell.awssf != null)) && (cell.value && cell.value.getAttribute("type") && cell.value.getAttribute("type").indexOf("awssf") == 0);
+  return (cell && (cell.awssf != null)) && (cell.value && cell.value.getAttribute && cell.value.getAttribute("type") && cell.value.getAttribute("type").indexOf("awssf") == 0);
 }
 export function isAWSconfig (cell) {
   return _is(cell, 'AWSconfig');
