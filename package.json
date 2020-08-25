@@ -8,20 +8,20 @@
   },
   "pkg": {},
   "dependencies": {
-    "aws-sdk": "^2.729.0",
+    "aws-sdk": "^2.739.0",
     "carlo": "^0.9.46"
   },
   "devDependencies": {
     "@types/jquery": "^3.5.1",
     "@types/mxgraph": "github:lgleim/mxgraph-typings",
-    "@typescript-eslint/eslint-plugin": "^3.8.0",
-    "@typescript-eslint/parser": "^3.8.0",
-    "css-loader": "^4.2.1",
-    "eslint": "^7.6.0",
+    "@typescript-eslint/eslint-plugin": "^3.10.1",
+    "@typescript-eslint/parser": "^3.10.1",
+    "css-loader": "^4.2.2",
+    "eslint": "^7.7.0",
     "eslint-plugin-html": "^6.0.3",
     "style-loader": "^1.2.1",
-    "ts-loader": "^8.0.2",
-    "typescript": "^3.9.7",
+    "ts-loader": "^8.0.3",
+    "typescript": "^4.0.2",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"
   },
