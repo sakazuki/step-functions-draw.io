@@ -86,6 +86,9 @@ RetryEdge.prototype.validate = function (cell, res) {
   if ((cell.source && cell.target) && (cell.source.id != cell.target.id)) {
     res.push("retry edge target MUST be self");
   }
+  if (!cell.getAttribute("error_equals")) {
+    res.push("error_equals MUST be a non-empty");
+  }
   if (awssfUtils.validateNumber(cell.getAttribute("interval_seconds")) == false) {
     res.push("interval_seconds MUST be a positive integer");
   }
@@ -136,6 +139,9 @@ CatchEdge.prototype.validate = function (cell, res) {
   if (!res) res = [];
   if (!(cell.source && cell.target)) {
     res.push("edge MUST be connected");
+  }
+  if (!cell.getAttribute("error_equals")) {
+    res.push("error_equals MUST be a non-empty");
   }
   if (awssfUtils.validateJsonPath(cell.getAttribute("result_path")) == false) {
     res.push("result_path MUST use only supported jsonpath");
