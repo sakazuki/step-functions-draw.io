@@ -52,7 +52,7 @@ MapState.prototype.expJSON = function (cell, cells) {
   if (cell.getAttribute("items_path"))
     data[label].ItemsPath = awssfUtils.adjustJsonPath(cell.getAttribute("items_path"));
   if (cell.getAttribute("max_concurrency"))
-    data[label].MaxConcurrency = cell.getAttribute("max_concurrency");
+    data[label].MaxConcurrency = Number(cell.getAttribute("max_concurrency"));
 
   let start;
   for(const i in cell.children) {
