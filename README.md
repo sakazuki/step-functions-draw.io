@@ -87,6 +87,7 @@ node carlo.js
 ```
 
 ## Version history
+- https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.4/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.3/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.2/dist/aws-step-functions.js
 - https://cdn.jsdelivr.net/gh/sakazuki/step-functions-draw.io@0.6.1/dist/aws-step-functions.js
