@@ -57,6 +57,8 @@ ParallelState.prototype.expJSON = function (cell, cells) {
     data[label].InputPath = awssfUtils.adjustJsonPath(cell.getAttribute("input_path"));
   if (cell.getAttribute("output_path"))
     data[label].OutputPath = awssfUtils.adjustJsonPath(cell.getAttribute("output_path"));
+  if (cell.getAttribute("result_selector"))
+    data[label].ResultSelector = JSON.parse(cell.getAttribute("result_selector"));
   if (cell.getAttribute("result_path"))
     data[label].ResultPath = awssfUtils.adjustJsonPath(cell.getAttribute("result_path"));
 

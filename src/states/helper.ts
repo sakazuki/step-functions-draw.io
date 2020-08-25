@@ -138,6 +138,9 @@ export function createState (awssf, name, style, json?) {
   }
   if (awssf.type.match(/Pass|Task|Parallel|Map/)) {
     cell.setAttribute('parameters', JSON.stringify(json.Parameters) || '');
+    if (awssf.type.match(/Task|Parallel|Map/)) {
+      cell.setAttribute('result_selector', JSON.stringify(json.ResultSelector) || '');
+    }
     cell.setAttribute('result_path', json.ResultPath || '');
   }
   cell.awssf = awssf;
