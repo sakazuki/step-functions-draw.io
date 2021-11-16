@@ -8,7 +8,7 @@
   },
   "pkg": {},
   "dependencies": {
-    "aws-sdk": "^2.739.0",
+    "aws-sdk": "^2.814.0",
     "carlo": "^0.9.46"
   },
   "devDependencies": {
